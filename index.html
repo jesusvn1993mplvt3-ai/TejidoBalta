@@ -12,7 +12,11 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <style>body { background: #000; color: white; overflow: hidden; touch-action: manipulation; }</style>
+    <style>
+        body { background: #000; color: white; overflow: hidden; touch-action: manipulation; }
+        #reader__scan_region { background: white !important; }
+        video { object-fit: cover !important; }
+    </style>
 </head>
 <body>
     <div id="root"></div>
@@ -48,7 +52,11 @@
             const scannerRef = useRef(null);
 
             useEffect(() => {
-                const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+                const scanner = new Html5QrcodeScanner("reader", { 
+                    fps: 15, 
+                    qrbox: { width: 320, height: 120 },
+                    aspectRatio: 1.0
+                });
                 scanner.render((text) => {
                     const code = text.trim().toUpperCase();
                     if (scans.find(s => s.code === code)) return;
@@ -59,7 +67,7 @@
                     });
                     if (found) {
                         setScans(prev => [...prev, found]);
-                        setMsg(`LEÍDO: ${found.pkg.piezaNombre || ''}`);
+                        setMsg(`LÉIDO: ${found.pkg?.piezaNombre || 'PIEZA'}`);
                     } else { setMsg("NO ENCONTRADO"); }
                 });
                 scannerRef.current = scanner;
@@ -97,7 +105,7 @@
                         {scans.map((s, i) => (
                             <div key={i} className="bg-slate-800 p-3 rounded mb-2 flex justify-between items-center border-l-4 border-cyan-500">
                                 <span className="font-bold">{s.code}</span>
-                                <span className="text-[10px] opacity-70 uppercase">{s.pkg.piezaNombre || ''}</span>
+                                <span className="text-[10px] opacity-70 uppercase">{s.pkg?.piezaNombre || ''}</span>
                             </div>
                         ))}
                     </div>
