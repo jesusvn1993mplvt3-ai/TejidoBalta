@@ -12,11 +12,10 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <style>body { background: #000; color: white; overflow: hidden; }</style>
+    <style>body { background: #000; color: white; overflow: hidden; touch-action: manipulation; }</style>
 </head>
 <body>
     <div id="root"></div>
-
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
         const firebaseConfig = {
@@ -30,15 +29,21 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const Icon = ({ name, size = 24, className }) => {
+        const Icon = ({ name, size = 24, className = "" }) => {
             const ref = useRef(null);
-            useEffect(() => { if (ref.current) ref.current.innerHTML = lucide.icons[name]?.toSvg({ width: size, height: size, class: className }); }, [name, size, className]);
+            useEffect(() => { 
+                if (ref.current) {
+                    ref.current.innerHTML = '';
+                    const svg = lucide.icons[name]?.toSvg({ width: size, height: size, class: className });
+                    if(svg) ref.current.innerHTML = svg;
+                }
+            }, [name, size, className]);
             return <span ref={ref} className="inline-flex"></span>;
         };
 
         const ScannerModal = ({ onClose, ordersCache, onSaved }) => {
             const [scans, setScans] = useState([]);
-            const [msg, setMsg] = useState('Escanea una papeleta...');
+            const [msg, setMsg] = useState('Escanea salida de TEJIDO...');
             const [isSaving, setIsSaving] = useState(false);
             const scannerRef = useRef(null);
 
@@ -47,19 +52,15 @@
                 scanner.render((text) => {
                     const code = text.trim().toUpperCase();
                     if (scans.find(s => s.code === code)) return;
-                    
                     let found = null;
                     ordersCache.forEach(o => {
                         const p = o.progreso?.find(pkg => pkg.codigoUnico === code);
                         if (p) found = { pkg: p, order: o, code };
                     });
-
                     if (found) {
                         setScans(prev => [...prev, found]);
-                        setMsg(`LÉIDO: ${found.pkg.piezaNombre || ''}`);
-                    } else {
-                        setMsg("NO ENCONTRADO");
-                    }
+                        setMsg(`LEÍDO: ${found.pkg.piezaNombre || ''}`);
+                    } else { setMsg("NO ENCONTRADO"); }
                 });
                 scannerRef.current = scanner;
                 return () => scanner.clear().catch(e => {});
@@ -75,7 +76,7 @@
                             if (p.codigoUnico === item.code) {
                                 const history = p.trackingHistory || [];
                                 if (!history.find(h => h.step === 'TEJEDOR')) {
-                                    history.push({ step: 'TEJEDOR', status: 'GREEN', timestamp: new Date().toISOString(), user: 'TEJEDOR_AUTO' });
+                                    history.push({ step: 'TEJEDOR', status: 'GREEN', timestamp: new Date().toISOString(), user: 'TEJEDOR' });
                                 }
                                 return { ...p, finished: true, currentStep: 'TEJEDOR', trackingHistory: history };
                             }
@@ -92,15 +93,15 @@
                 <div className="fixed inset-0 bg-black z-50 flex flex-col">
                     <div id="reader" className="w-full"></div>
                     <div className="p-4 flex-grow overflow-y-auto">
-                        <div className="text-cyan-400 font-bold mb-4 text-center">{msg}</div>
+                        <div className="text-cyan-400 font-bold mb-4 text-center uppercase tracking-widest">{msg}</div>
                         {scans.map((s, i) => (
-                            <div key={i} className="bg-slate-800 p-3 rounded mb-2 flex justify-between">
-                                <span>{s.code}</span>
-                                <span className="text-xs opacity-50 uppercase">{s.pkg.piezaNombre || ''}</span>
+                            <div key={i} className="bg-slate-800 p-3 rounded mb-2 flex justify-between items-center border-l-4 border-cyan-500">
+                                <span className="font-bold">{s.code}</span>
+                                <span className="text-[10px] opacity-70 uppercase">{s.pkg.piezaNombre || ''}</span>
                             </div>
                         ))}
                     </div>
-                    <button onClick={confirmAll} className="m-4 bg-cyan-600 p-4 rounded-xl font-bold text-xl uppercase">
+                    <button onClick={confirmAll} disabled={isSaving || scans.length === 0} className="m-4 bg-cyan-600 p-4 rounded-xl font-bold text-xl uppercase shadow-lg active:scale-95 transition-transform">
                         {isSaving ? 'Guardando...' : `Confirmar ${scans.length}`}
                     </button>
                 </div>
@@ -113,19 +114,19 @@
             useEffect(() => {
                 return db.collection('orders').where('status', '!=', 'ARCHIVADO').onSnapshot(s => setOrders(s.docs.map(d => ({...d.data(), id: d.id}))));
             }, []);
-
             return (
-                <div className="h-screen flex flex-col items-center justify-center p-6 text-center">
-                    <h1 className="text-3xl font-black text-cyan-500 mb-8 tracking-tighter italic">CIRINEO <span className="text-white">TEJEDOR</span></h1>
-                    <button onClick={() => setShow(true)} className="w-full aspect-square bg-slate-900 border-4 border-cyan-500 rounded-full flex flex-col items-center justify-center gap-4 shadow-[0_0_40px_rgba(6,182,212,0.2)]">
+                <div className="h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-950">
+                    <h1 className="text-3xl font-black text-cyan-500 mb-8 tracking-tighter italic flex items-center gap-2">
+                        <Icon name="scan-barcode" size={32} /> CIRINEO <span className="text-white">TEJEDOR</span>
+                    </h1>
+                    <button onClick={() => setShow(true)} className="w-full aspect-square bg-slate-900 border-4 border-cyan-500 rounded-full flex flex-col items-center justify-center gap-4 shadow-[0_0_40px_rgba(6,182,212,0.2)] active:scale-95 transition-transform">
                         <Icon name="camera" size={60} className="text-cyan-400"/>
-                        <span className="font-bold text-xl uppercase">Escanear Salida</span>
+                        <span className="font-bold text-xl uppercase tracking-widest">Escanear Salida</span>
                     </button>
                     {show && <ScannerModal onClose={() => setShow(false)} ordersCache={orders} onSaved={(n) => alert(`Listo: ${n} procesados`)} />}
                 </div>
             );
         };
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
