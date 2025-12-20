@@ -3,15 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balta Scan v9</title>
+    <title>Unidad de Control - Balta Scan v12</title>
     
-    <meta property="og:title" content="Balta Scan - Producción">
-    <meta property="og:image" content="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png">
-
     <meta name="theme-color" content="#020617">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkJhbHRhIFNjYW4iLAogICJzaG9ydF9uYW1lIjogIkJhbHRhU2NhbiIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDIwNjE3IiwKICAidGhlbWVfY29sb3IiOiAiIzAyMDYxNyIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9qZXN1c3ZuMTk5M21wbHZ0My1haS9QbGFuaWZpY2Fkb3IvcmVmcy9oZWFkcy9tYWluL0JhbHRhLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
-
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -22,38 +19,31 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
-        body { margin: 0; background: #020617; font-family: 'Inter', sans-serif; overflow: hidden; color: white; overscroll-behavior: none; }
+        body { margin: 0; background: #020617; font-family: 'Inter', sans-serif; color: white; overflow: hidden; }
         
-        /* Botón Balta-X */
-        .btn-close-balta { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); }
+        /* Botón de cierre: X negra detrás del logo de Balta */
+        .btn-close-balta { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); z-index: 1000; }
         .balta-mini-logo { width: 32px; height: 32px; border-radius: 50%; z-index: 10; }
         .x-black-bg { position: absolute; font-weight: 900; font-size: 38px; color: black; z-index: 5; }
 
-        /* HEADER */
+        /* Header */
         .fixed-header-container { position: fixed; top: 0; left: 0; width: 100%; z-index: 100; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(12px); padding: 10px 0; display: flex; justify-content: center; border-bottom: 1px solid rgba(255, 0, 0, 0.15); }
         .header-logo-img { height: 50px; }
 
-        /* SCANNER FIX DEFINITIVO */
-        .scan-wrapper {
-            width: 100%; height: 200px;
-            border: 3px solid #3b82f6; border-radius: 24px;
-            position: relative; overflow: hidden; background: #000;
-        }
-        
-        /* Forzar al elemento de la librería a llenar el contenedor */
-        #reader { width: 100% !important; height: 100% !important; border: none !important; margin: 0 !important; padding: 0 !important; }
-        #reader video { 
-            width: 100% !important; height: 100% !important; 
-            object-fit: cover !important; /* Importante para que no se vea estirado ni sobran espacios */
-            position: absolute; top: 0; left: 0;
-        }
-        
-        /* Ocultar basura visual de la librería */
-        #reader__dashboard, #reader__header_message, #reader img { display: none !important; }
+        /* Scanner Frame */
+        .scan-wrapper { width: 100%; height: 200px; border: 3px solid #3b82f6; border-radius: 24px; position: relative; overflow: hidden; background: #000; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
 
-        .wait-overlay { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.9); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Modal Consolidador (Lateral) */
+        .drawer-container { position: fixed; inset: 0; z-index: 600; display: flex; justify-content: flex-end; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
+        .drawer-content { width: 85%; max-width: 320px; height: 100%; background: #0f172a; border-left: 2px solid #3b82f6; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        
+        .preview-card { background: #1e293b; border-radius: 12px; display: flex; height: 85px; overflow: hidden; border: 1px solid #334155; margin-bottom: 12px; }
+        .preview-img { width: 70px; height: 100%; background: #000; flex-shrink: 0; }
+        .preview-img img { width: 100%; height: 100%; object-fit: cover; }
+
+        .wait-overlay { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.9); z-index: 50; display: flex; items-center; justify-content: center; font-size: 4rem; font-weight: 900; color: #3b82f6; }
     </style>
 </head>
 <body>
@@ -75,168 +65,159 @@
 
         const SUCCESS_SOUND = new Audio("https://github.com/jesusvn1993mplvt3-ai/TejidoBalta/raw/refs/heads/main/Data/author.mp3");
 
-        const Icon = ({ name, size = 24, className }) => {
-            const ref = useRef(null);
-            useEffect(() => { if (ref.current && lucide.icons[name]) { ref.current.innerHTML = lucide.icons[name].toSvg({ width: size, height: size, class: className }); } }, [name, className, size]);
-            return <span ref={ref} className="inline-flex"></span>;
-        };
-
+        // Botón Cierre Balta-X
         const CloseButtonBalta = ({ onClick }) => (
-            <button onClick={onClick} className="btn-close-balta active:scale-90 transition-transform">
+            <button onClick={onClick} className="btn-close-balta">
                 <span className="x-black-bg">X</span>
                 <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="balta-mini-logo" />
             </button>
         );
 
-        const QuickScannerModal = ({ isVisible, onClose, ordersCache, onScanSaved }) => {
+        // Foto Papeleta
+        const SmartImage = ({ modelo }) => {
+            const BASE = "https://raw.githubusercontent.com/sweaters-liliana/MAES26/refs/heads/main/IMAGENES/PAPELETAS/";
+            const [src, setSrc] = useState(`${BASE}${modelo}.png`);
+            return <img src={src} onError={() => setSrc(`${BASE}${modelo}.jpg`)} />;
+        };
+
+        // --- EL CONSOLIDADOR (Drawer) ---
+        const ConsolidadorDrawer = ({ isOpen, onClose, items }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="drawer-container" onClick={onClose}>
+                    <div className="drawer-content flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-[#020617]">
+                            <h2 className="font-black text-blue-500 italic">VISTA PREVIA</h2>
+                            <CloseButtonBalta onClick={onClose} />
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {items.length === 0 ? (
+                                <div className="text-center text-slate-500 font-bold mt-20">SIN REGISTROS</div>
+                            ) : (
+                                items.map((item, i) => (
+                                    <div key={i} className="preview-card">
+                                        <div className="preview-img"><SmartImage modelo={item.modelo} /></div>
+                                        <div className="p-2 flex flex-col justify-center overflow-hidden">
+                                            <span className="font-mono font-bold text-white text-xs truncate">{item.code}</span>
+                                            <span className="text-[10px] text-blue-400 font-black uppercase">{item.modelo}</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MODAL SCANNER ---
+        const ScannerModal = ({ isVisible, onClose, ordersCache }) => {
             const [scans, setScans] = useState([]);
-            const [isWaiting, setIsWaiting] = useState(false);
-            const [countdown, setCountdown] = useState(0);
+            const [wait, setWait] = useState(0);
             const [msg, setMsg] = useState("");
-            const html5QrCodeRef = useRef(null);
+            const qrRef = useRef(null);
 
             useEffect(() => {
                 if (isVisible) {
-                    const timer = setTimeout(startScanner, 300);
-                    return () => clearTimeout(timer);
-                } else {
-                    stopScanner();
+                    const qr = new Html5Qrcode("reader");
+                    qrRef.current = qr;
+                    qr.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => {
+                        if (wait > 0) return;
+                        const code = text.trim().toUpperCase();
+                        if (scans.some(s => s.code === code)) { setMsg("⚠️ REPETIDO"); return; }
+                        
+                        let found = null;
+                        ordersCache.forEach(o => {
+                            const p = o.progreso?.find(pkg => pkg.codigoUnico === code);
+                            if (p) found = { code, modelo: o.codigo, id: o.id };
+                        });
+
+                        if (found) {
+                            SUCCESS_SOUND.play();
+                            setScans(prev => [found, ...prev]);
+                            setMsg(`✅ ${found.modelo}`);
+                            setWait(5);
+                        } else { setMsg("❌ NO VÁLIDO"); }
+                    });
+                } else if (qrRef.current) {
+                    qrRef.current.stop();
                 }
             }, [isVisible]);
 
-            const startScanner = async () => {
-                try {
-                    const scanner = new Html5Qrcode("reader");
-                    html5QrCodeRef.current = scanner;
-                    await scanner.start(
-                        { facingMode: "environment" }, 
-                        { fps: 20, qrbox: { width: 250, height: 120 } }, 
-                        onScanSuccess
-                    );
-                } catch (e) { setMsg("Error Cámara"); }
-            };
-
-            const stopScanner = async () => { if (html5QrCodeRef.current) { try { await html5QrCodeRef.current.stop(); } catch(e){} html5QrCodeRef.current = null; } };
-
-            const onScanSuccess = (decodedText) => {
-                if (isWaiting) return;
-                const code = decodedText.trim().toUpperCase();
-
-                if (scans.some(s => s.code === code)) {
-                    setMsg(`⚠️ REPETIDO: ${code}`);
-                    return;
+            useEffect(() => {
+                if (wait > 0) {
+                    const t = setTimeout(() => setWait(wait - 1), 1000);
+                    return () => clearTimeout(t);
                 }
+            }, [wait]);
 
-                let found = null;
-                ordersCache.forEach(o => {
-                    const p = o.progreso?.find(pkg => pkg.codigoUnico === code);
-                    if (p) found = { code, modelo: o.codigo, num: p.paqueteNum, orderId: o.id };
-                });
-
-                if (found) {
-                    SUCCESS_SOUND.play();
-                    setScans(prev => [found, ...prev]);
-                    setMsg(`✅ OK: ${found.modelo}`);
-                    activateCooldown();
-                } else {
-                    setMsg("❌ NO VÁLIDO");
-                }
-            };
-
-            const activateCooldown = () => {
-                setIsWaiting(true);
-                setCountdown(5);
-                const timer = setInterval(() => {
-                    setCountdown(prev => {
-                        if (prev <= 1) { clearInterval(timer); setIsWaiting(false); return 0; }
-                        return prev - 1;
-                    });
-                }, 1000);
-            };
-
-            const save = async () => {
-                const batch = db.batch();
-                scans.forEach(s => {
-                    const ref = db.collection('registro_produccion').doc();
-                    batch.set(ref, { ...s, codigo_paquete: s.code, fecha: firebase.firestore.FieldValue.serverTimestamp(), tejedor: "Balta" });
-                });
-                await batch.commit();
-                onScanSaved(scans.length);
+            const confirm = async () => {
+                const b = db.batch();
+                scans.forEach(s => b.set(db.collection('registro_produccion').doc(), { ...s, fecha: firebase.firestore.FieldValue.serverTimestamp(), tejedor: "Balta" }));
+                await b.commit();
                 onClose();
             };
 
             if (!isVisible) return null;
 
             return (
-                <div className="fixed inset-0 z-[500] bg-[#020617] flex flex-col p-6 animate-fade-in">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="font-black text-xl text-blue-500">ESCÁNER ACTIVO</h2>
+                <div className="fixed inset-0 z-[700] bg-[#020617] flex flex-col p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="font-black text-blue-500">ESCÁNER</h2>
                         <CloseButtonBalta onClick={onClose} />
                     </div>
-
                     <div className="scan-wrapper mb-4">
                         <div id="reader"></div>
-                        {isWaiting && (
-                            <div className="wait-overlay">
-                                <span className="text-6xl font-black text-blue-500">{countdown}</span>
-                                <span className="text-[10px] font-black tracking-widest mt-2">ESPERE...</span>
-                            </div>
-                        )}
+                        {wait > 0 && <div className="wait-overlay">{wait}</div>}
                     </div>
-
-                    <div className="text-center mb-4 h-5"><span className="text-xs font-black uppercase text-slate-400">{msg}</span></div>
-
+                    <div className="text-center h-4 mb-4 text-[10px] font-black">{msg}</div>
                     <div className="flex-1 overflow-y-auto space-y-2 mb-4">
-                        {scans.map(s => (
-                            <div key={s.code} className="glass-card p-3 rounded-xl flex justify-between animate-fade-in">
-                                <span className="font-mono text-sm">{s.code}</span>
-                                <span className="text-blue-400 text-xs font-black">{s.modelo}</span>
-                            </div>
-                        ))}
+                        {scans.map(s => <div key={s.code} className="bg-slate-900 p-2 rounded-lg flex justify-between text-xs"><span>{s.code}</span><span className="text-blue-500">{s.modelo}</span></div>)}
                     </div>
-
-                    <button onClick={save} disabled={scans.length === 0} className="w-full py-5 bg-blue-600 rounded-[2rem] font-black shadow-xl">
-                        GUARDAR {scans.length} PAQUETES
-                    </button>
+                    <button onClick={confirm} className="w-full py-5 bg-blue-600 rounded-full font-black uppercase text-xs">Confirmar Lote</button>
                 </div>
             );
         };
 
         const App = () => {
             const [orders, setOrders] = useState([]);
-            const [showScanner, setShowScanner] = useState(false);
-            const [deferredPrompt, setDeferredPrompt] = useState(null);
+            const [recent, setRecent] = useState([]);
+            const [showScan, setShowScan] = useState(false);
+            const [showCons, setShowCons] = useState(false);
 
             useEffect(() => {
                 db.collection('orders').where('status','!=','ARCHIVADO').onSnapshot(s => setOrders(s.docs.map(d => ({...d.data(), id: d.id}))));
-                window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); });
+                db.collection('registro_produccion').orderBy('fecha','desc').limit(10).onSnapshot(s => setRecent(s.docs.map(d => d.data())));
             }, []);
 
             return (
-                <div className="h-screen w-screen flex flex-col overflow-hidden">
+                <div className="h-screen w-screen flex flex-col">
                     <div className="fixed-header-container">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="header-logo-img" />
                     </div>
 
-                    <div className="flex-1 flex flex-col justify-center items-center p-8 pt-24 gap-12">
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 gap-12">
                         <div className="text-center">
-                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="w-40 h-40 rounded-full mx-auto mb-4 border-2 border-red-500/20" />
-                            <h1 className="text-4xl font-black tracking-tighter">BALTA SCAN</h1>
+                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="w-40 h-40 rounded-full mx-auto mb-4" />
+                            <h1 className="text-4xl font-black italic">BALTA SCAN</h1>
                         </div>
 
-                        <div onClick={() => setShowScanner(true)} className="glass-card w-full max-w-xs py-14 rounded-[3.5rem] flex flex-col items-center gap-6 cursor-pointer">
-                            <Icon name="camera" size={48} className="text-blue-500"/>
-                            <span className="font-black text-xs uppercase tracking-widest">Abrir Cámara</span>
+                        <div onClick={() => setShowScan(true)} className="w-full max-w-xs py-14 bg-white/5 border border-white/10 rounded-[3rem] flex flex-col items-center gap-4 cursor-pointer">
+                            <div className="bg-blue-600 p-4 rounded-full"><span className="font-black text-2xl">📸</span></div>
+                            <span className="font-black text-xs uppercase tracking-widest">Escaneo Producción</span>
                         </div>
-
-                        {deferredPrompt && (
-                            <button onClick={() => { deferredPrompt.prompt(); setDeferredPrompt(null); }} className="bg-white text-black px-6 py-3 rounded-full font-black text-xs">
-                                INSTALAR APP
-                            </button>
-                        )}
                     </div>
 
-                    <QuickScannerModal isVisible={showScanner} onClose={() => setShowScanner(false)} ordersCache={orders} onScanSaved={(n) => {}} />
+                    {/* BOTÓN CJNG PIE DE PÁGINA (ABRE CONSOLIDADOR) */}
+                    <div className="p-6 flex justify-end bg-slate-900/50 border-t border-slate-800">
+                        <div className="relative cursor-pointer" onClick={() => setShowCons(true)}>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="w-14 h-14 object-contain filter drop-shadow-[0_0_8px_red]" />
+                            {recent.length > 0 && <div className="absolute -top-1 -right-1 bg-red-600 text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-2 border-[#020617] font-black">{recent.length}</div>}
+                        </div>
+                    </div>
+
+                    <ScannerModal isVisible={showScan} onClose={() => setShowScan(false)} ordersCache={orders} />
+                    <ConsolidadorDrawer isOpen={showCons} onClose={() => setShowCons(false)} items={recent} />
                 </div>
             );
         };
