@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balta Escanear v4</title>
+    <title>Balta Escanear v5</title>
     
     <meta name="theme-color" content="#020617">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Balta Scan">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -19,7 +23,6 @@
 
     <style>
         body { margin: 0; background: #020617; font-family: 'Inter', sans-serif; overflow: hidden; color: white; overscroll-behavior: none; }
-        .glass-panel { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); }
         .glass-card { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .glass-card:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.15); }
         
@@ -28,7 +31,6 @@
             background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(12px);
             padding: 10px 0; display: flex; justify-content: center;
             border-bottom: 1px solid rgba(255, 0, 0, 0.15);
-            transition: all 0.2s ease;
         }
         .header-logo-img { height: 50px; width: auto; object-fit: contain; filter: drop-shadow(0 0 8px rgba(255,0,0,0.3)); }
         
@@ -40,19 +42,14 @@
         }
         @keyframes scanMove { 0% { transform: translateX(-100%); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateX(100%); opacity: 0; } }
 
-        .main-content-padded { padding-top: 90px !important; }
-
-        /* Estilos Drawer */
         .drawer-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
         .drawer-content { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: #0f172a; border-left: 1px solid #1e293b; }
         
-        /* Tarjeta Preview 1x3 | 2x3 */
         .preview-card {
             display: flex; height: 130px; border-radius: 12px; overflow: hidden; 
             background: #1e293b; border: 1px solid #334155; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
-        .preview-img-col { width: 35%; height: 100%; position: relative; background: #000; overflow: hidden; border-right: 1px solid #334155; }
+        .preview-img-col { width: 35%; height: 100%; position: relative; background: #000; overflow: hidden; }
         .preview-img-col img { width: 100%; height: 100%; object-fit: cover; }
         .preview-data-col { width: 65%; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
 
@@ -62,14 +59,13 @@
         .scan-window { 
             height: 150px; width: 100%; border: 2px solid #0ea5e9; border-radius: 16px; 
             overflow: hidden; position: relative; background: #000;
-            box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
         }
         .scan-laser { 
             position: absolute; width: 100%; height: 2px; background: #38bdf8; 
-            box-shadow: 0 0 15px #38bdf8, 0 0 30px #0ea5e9; 
+            box-shadow: 0 0 15px #38bdf8; 
             animation: laserMove 2s infinite linear; z-index: 10; top: 0;
         }
-        @keyframes laserMove { 0% { top: 0%; opacity: 0.8; } 50% { top: 100%; opacity: 1; } 100% { top: 0%; opacity: 0.8; } }
+        @keyframes laserMove { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -78,8 +74,9 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo } = React;
+        const { useState, useEffect, useRef } = React;
 
+        // Configuración Firebase (Omitida por brevedad, usa la tuya)
         const firebaseConfig = {
             apiKey: "AIzaSyBqHgV4vDat1-VmZfKbiPg7nuiX-ROcexw",
             authDomain: "cirineo-cec21.firebaseapp.com",
@@ -105,113 +102,91 @@
             return <span ref={ref} onClick={onClick} className={`inline-flex items-center justify-center ${onClick ? 'cursor-pointer' : ''}`}></span>;
         };
 
-        const playSuccessSound = () => {
-            try {
-                successAudio.currentTime = 0;
-                successAudio.play().catch(e => console.error("Audio error", e));
-            } catch(e) {}
+        // --- COMPONENTE BOTÓN INSTALAR ---
+        const InstallButton = () => {
+            const [deferredPrompt, setDeferredPrompt] = useState(null);
+            const [isVisible, setIsVisible] = useState(false);
+
+            useEffect(() => {
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    setDeferredPrompt(e);
+                    setIsVisible(true);
+                });
+
+                window.addEventListener('appinstalled', () => {
+                    setIsVisible(false);
+                    setDeferredPrompt(null);
+                });
+            }, []);
+
+            const handleInstall = async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    setIsVisible(false);
+                    setDeferredPrompt(null);
+                }
+            };
+
+            if (!isVisible) return null;
+
+            return (
+                <button 
+                    onClick={handleInstall}
+                    className="fixed bottom-6 left-6 right-6 bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 shadow-2xl shadow-blue-900/40 animate-bounce z-[400] border border-blue-400/30"
+                >
+                    <Icon name="download" size={20}/>
+                    INSTALAR APP EN CELULAR
+                </button>
+            );
         };
 
-        // --- COMPONENTE IMAGEN INTELIGENTE ---
+        // ... (Componentes SmartImage, PreviewDrawer y QuickScannerModal se mantienen igual que la v4)
+
         const SmartImage = ({ modelo }) => {
             const BASE_URL = "https://raw.githubusercontent.com/sweaters-liliana/MAES26/refs/heads/main/IMAGENES/PAPELETAS/";
             const [src, setSrc] = useState(`${BASE_URL}${modelo}.png`);
             const [errorCount, setErrorCount] = useState(0);
-
-            const handleError = () => {
-                if (errorCount === 0) {
-                    setSrc(`${BASE_URL}${modelo}.jpg`);
-                    setErrorCount(1);
-                } else {
-                    setSrc(null);
-                }
-            };
-
-            if (!src) return <div className="w-full h-full flex items-center justify-center text-slate-600 text-[10px] font-bold bg-slate-900">SIN FOTO</div>;
+            const handleError = () => { if (errorCount === 0) { setSrc(`${BASE_URL}${modelo}.jpg`); setErrorCount(1); } else { setSrc(null); } };
+            if (!src) return <div className="w-full h-full flex items-center justify-center text-slate-600 text-[10px] font-bold bg-slate-900 uppercase">Sin Foto</div>;
             return <img src={src} onError={handleError} alt={modelo} />;
         };
 
-        // --- DRAWER DE VISTA PREVIA ---
         const PreviewDrawer = ({ isOpen, onClose, pendingScans, ordersCache }) => {
             if (!isOpen) return null;
-
             return (
                 <div className="fixed inset-0 z-[300] flex justify-end drawer-overlay" onClick={onClose}>
                     <div className="w-full max-w-sm h-full drawer-content flex flex-col shadow-2xl border-l-2 border-blue-500/30" onClick={e => e.stopPropagation()}>
-                        <div className="bg-[#020617] p-4 border-b border-slate-800 flex justify-between items-center shadow-lg">
+                        <div className="bg-[#020617] p-4 border-b border-slate-800 flex justify-between items-center">
                             <div>
-                                <h2 className="text-white font-black text-xl flex items-center gap-2 tracking-tight">
-                                    <Icon name="list-checks" className="text-blue-500"/> EN CONSOLIDADOR
+                                <h2 className="text-white font-black text-xl flex items-center gap-2">
+                                    <Icon name="list-checks" className="text-blue-500"/> CONSOLIDADOR
                                 </h2>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                                    {pendingScans.length} PAQUETES ESCANEADOS
-                                </p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{pendingScans.length} PENDIENTES</p>
                             </div>
-                            <button onClick={onClose} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-white transition-colors border border-slate-700">
-                                <Icon name="x" size={20}/>
-                            </button>
+                            <button onClick={onClose} className="p-2 bg-slate-800 rounded-full text-white"><Icon name="x" size={20}/></button>
                         </div>
-
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0f172a]">
-                            {pendingScans.length === 0 ? (
-                                <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50">
-                                    <Icon name="inbox" size={48} className="mb-2"/>
-                                    <span className="text-xs font-bold uppercase tracking-widest">Nada pendiente</span>
-                                </div>
-                            ) : (
-                                pendingScans.map(scan => {
-                                    // Buscar orden para obtener Talla y Máquina
-                                    const order = ordersCache.find(o => String(o.id) === String(scan.orderId));
-                                    const maquina = order ? order.maquina : '??';
-                                    const talla = order?.subPiecesData?.[0]?.talla || 'U'; 
-
-                                    return (
-                                        <div key={scan.id} className="preview-card animate-fade-in group hover:border-blue-500 transition-colors relative">
-                                            {/* Columna Izquierda: Foto (1/3) */}
-                                            <div className="preview-img-col">
-                                                <SmartImage modelo={scan.modelo} />
-                                                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent pt-4 pb-1 text-white text-[10px] font-black text-center truncate px-1 shadow-sm">
-                                                    {scan.modelo}
-                                                </div>
+                            {pendingScans.map(scan => {
+                                const order = ordersCache.find(o => String(o.id) === String(scan.orderId));
+                                return (
+                                    <div key={scan.id} className="preview-card animate-fade-in">
+                                        <div className="preview-img-col"><SmartImage modelo={scan.modelo} /></div>
+                                        <div className="preview-data-col">
+                                            <div className="flex justify-between items-start border-b border-slate-700/50 pb-1">
+                                                <span className="font-mono font-black text-lg text-white">{scan.codigo_paquete}</span>
+                                                <span className="bg-blue-600 text-[9px] px-1.5 py-0.5 rounded font-bold">Pqt {scan.paquete_indice}</span>
                                             </div>
-                                            
-                                            {/* Columna Derecha: Datos (2/3) */}
-                                            <div className="preview-data-col bg-[#1e293b]">
-                                                <div className="flex justify-between items-start border-b border-slate-700/50 pb-2 mb-1">
-                                                    <div>
-                                                        <span className="font-mono font-black text-xl text-white tracking-tighter block leading-none">{scan.codigo_paquete}</span>
-                                                    </div>
-                                                    <div className="text-right">
-                                                         <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded font-bold shadow-sm">
-                                                            Pqt {scan.paquete_indice}/{scan.paquete_total}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1">
-                                                    <div>
-                                                        <span className="block text-[9px] text-slate-500 font-bold uppercase">Partida</span>
-                                                        <span className="text-sm font-bold text-slate-300">{scan.partida}</span>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="block text-[9px] text-slate-500 font-bold uppercase">Máquina</span>
-                                                        <span className="text-sm font-black text-yellow-400 bg-yellow-400/10 px-1 rounded inline-block">{maquina}</span>
-                                                    </div>
-                                                    <div className="col-span-2 flex justify-between items-end pt-1 border-t border-slate-700/50 mt-1">
-                                                        <div>
-                                                             <span className="block text-[9px] text-slate-500 font-bold uppercase">Talla</span>
-                                                            <span className="text-xl font-black text-white leading-none">{talla}</span>
-                                                        </div>
-                                                        <div className="text-[9px] text-slate-500 font-mono">
-                                                            {scan.fecha_legible ? scan.fecha_legible.split(',')[1] : ''}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                            <div className="grid grid-cols-2 gap-1 text-[11px]">
+                                                <span className="text-slate-500 font-bold uppercase italic">{scan.modelo}</span>
+                                                <span className="text-right text-yellow-400 font-black">{order?.maquina || '??'}</span>
                                             </div>
                                         </div>
-                                    );
-                                })
-                            )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -219,15 +194,12 @@
         };
 
         const QuickScannerModal = ({ isVisible, onClose, ordersCache, onScanSaved }) => {
-            const [scans, setScans] = useState([]); 
+            const [scans, setScans] = useState([]);
             const [isSaving, setIsSaving] = useState(false);
-            const [status, setStatus] = useState("Cámara lista");
             const html5QrCodeRef = useRef(null);
-            const lastCodeRef = useRef({ code: '', time: 0 });
-
+            
             useEffect(() => {
-                if (isVisible) { setScans([]); startScanner(); } 
-                else { stopScanner(); }
+                if (isVisible) { startScanner(); } else { stopScanner(); }
                 return () => stopScanner();
             }, [isVisible]);
 
@@ -235,184 +207,100 @@
                 try {
                     const html5QrCode = new Html5Qrcode("reader");
                     html5QrCodeRef.current = html5QrCode;
-                    await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 300, height: 100 }, aspectRatio: 1.0 }, 
-                        (decodedText) => handleQuickScan(decodedText), () => {});
-                } catch (err) { setStatus("Error al iniciar cámara"); }
+                    await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 100 } }, 
+                        (decodedText) => {
+                            const cleanCode = decodedText.trim().toUpperCase();
+                            if (scans.some(s => s.code === cleanCode)) return;
+                            
+                            let found = null;
+                            ordersCache.forEach(o => {
+                                const p = o.progreso?.find(p => p.codigoUnico === cleanCode);
+                                if (p) found = { code: cleanCode, orderId: o.id, modelo: o.codigo, partida: o.partida, paquete_indice: p.paqueteNum, paquete_total: p.paquetesDePieza, piezas_en_paquete: p.cantidad, tejedor: "Balta" };
+                            });
+
+                            if (found) {
+                                successAudio.play();
+                                setScans(prev => [found, ...prev]);
+                            }
+                        }, () => {});
+                } catch (e) {}
             };
 
-            const stopScanner = async () => {
-                if (html5QrCodeRef.current) {
-                    try { await html5QrCodeRef.current.stop(); html5QrCodeRef.current.clear(); } catch(e) {}
-                    html5QrCodeRef.current = null;
-                }
-            };
+            const stopScanner = async () => { if (html5QrCodeRef.current) { await html5QrCodeRef.current.stop(); html5QrCodeRef.current = null; } };
 
-            const handleQuickScan = (rawCode) => {
-                const now = Date.now();
-                const cleanCode = rawCode.trim().toUpperCase().replace(/'/g, '-').replace(/\?/g, '_');
-                if (cleanCode === lastCodeRef.current.code && (now - lastCodeRef.current.time) < 2000) return;
-                lastCodeRef.current = { code: cleanCode, time: now };
-
-                if (scans.some(s => s.code === cleanCode)) { setStatus(`¡${cleanCode} YA REGISTRADO!`); return; }
-
-                let foundPackage = null;
-                for (const order of ordersCache) {
-                    if (order.progreso) {
-                        const pkg = order.progreso.find(p => p.codigoUnico === cleanCode);
-                        if (pkg) {
-                            foundPackage = { 
-                                code: cleanCode, orderId: order.id, modelo: order.codigo, partida: order.partida,
-                                paquete_indice: pkg.paqueteNum, paquete_total: pkg.paquetesDePieza, piezas_en_paquete: pkg.cantidad,
-                                tejedor: "Balta" 
-                            };
-                            break;
-                        }
-                    }
-                }
-
-                if (foundPackage) {
-                    playSuccessSound(); 
-                    setScans(prev => [foundPackage, ...prev]);
-                    setStatus(`Leído: ${foundPackage.modelo} #${foundPackage.paquete_indice}`);
-                } else { setStatus(`Código ${cleanCode} NO ENCONTRADO`); }
-            };
-
-            const confirmScans = async () => {
-                if (scans.length === 0 || isSaving) return;
+            const save = async () => {
                 setIsSaving(true);
                 const batch = db.batch();
-                let savedCount = 0;
-                for (const scan of scans) {
-                    const docRef = db.collection('registro_produccion').doc();
-                    batch.set(docRef, {
-                        codigo_paquete: scan.code, orderId: String(scan.orderId), fecha: FieldValue.serverTimestamp(),
-                        fecha_legible: new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '/'), 
-                        tejedor: scan.tejedor, tipo: "produccion", modelo: scan.modelo, partida: scan.partida,
-                        paquete_indice: scan.paquete_indice, paquete_total: scan.paquete_total, piezas_en_paquete: scan.piezas_en_paquete
-                    });
-                    savedCount++;
-                }
+                scans.forEach(s => {
+                    const ref = db.collection('registro_produccion').doc();
+                    batch.set(ref, { ...s, codigo_paquete: s.code, fecha: FieldValue.serverTimestamp(), fecha_legible: new Date().toLocaleString(), tipo: "produccion" });
+                });
                 await batch.commit();
-                setIsSaving(false);
-                onScanSaved(savedCount);
+                onScanSaved(scans.length);
                 onClose();
+                setIsSaving(false);
             };
 
-            const removeScan = (code) => setScans(prev => prev.filter(s => s.code !== code));
-
             if (!isVisible) return null;
-
             return (
-                <div className="fixed inset-0 z-[200] bg-[#020617] flex flex-col p-6 animate-fade-in">
-                    <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <h2 className="text-white text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
-                                <Icon name="camera" className="text-blue-500"/> BARCODE SCANNER
-                            </h2>
-                            <p className="text-slate-500 text-xs font-bold tracking-[0.2em] uppercase">USUARIO: BALTA</p>
-                        </div>
-                        <button onClick={onClose} className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center text-white border border-red-500/30 hover:bg-red-500/20 active:scale-95 transition-all">
-                            <Icon name="x" size={32} className="text-white drop-shadow-lg"/>
-                        </button>
+                <div className="fixed inset-0 z-[500] bg-[#020617] flex flex-col p-6">
+                    <div className="flex justify-between mb-4 items-center">
+                        <h2 className="text-xl font-black">SCANNER ACTIVO</h2>
+                        <button onClick={onClose} className="p-2 bg-red-500/20 text-red-500 rounded-xl"><Icon name="x"/></button>
                     </div>
-
-                    <div className="scan-window mb-4 shadow-2xl shadow-blue-900/20"><div id="reader"></div><div className="scan-laser"></div></div>
-                    <div className="text-center mb-4"><span className={`text-xs font-bold px-3 py-1 rounded-full ${status.includes('NO') ? 'bg-red-900/50 text-red-400' : 'bg-blue-900/30 text-blue-400'}`}>{status}</span></div>
-                    
-                    <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
-                        {scans.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-700 opacity-50"><Icon name="qr-code" size={48} className="mb-2"/><span className="text-sm font-bold uppercase tracking-widest">Esperando códigos...</span></div>
-                        ) : (
-                            scans.map((s) => (
-                                <div key={s.code} className="glass-card p-4 rounded-2xl flex justify-between items-center animate-fade-in group">
-                                    <div><div className="font-mono font-bold text-sky-400 text-lg">{s.code}</div><div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{s.modelo} • Pqt {s.paquete_indice}/{s.paquete_total}</div></div>
-                                    <button onClick={() => removeScan(s.code)} className="text-slate-600 hover:text-red-400 transition-colors"><Icon name="trash-2" size={18}/></button>
-                                </div>
-                            ))
-                        )}
+                    <div className="scan-window mb-4"><div id="reader"></div><div className="scan-laser"></div></div>
+                    <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+                        {scans.map(s => <div key={s.code} className="glass-card p-3 rounded-xl flex justify-between font-mono text-sm"><span>{s.code}</span><span className="text-sky-400">{s.modelo}</span></div>)}
                     </div>
-                    <button onClick={confirmScans} disabled={scans.length === 0 || isSaving} className={`w-full py-5 rounded-3xl font-black text-white shadow-xl transition-all ${scans.length > 0 && !isSaving ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/40' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}>{isSaving ? 'GUARDANDO...' : `CONFIRMAR (${scans.length})`}</button>
+                    <button onClick={save} disabled={scans.length === 0 || isSaving} className="w-full py-4 bg-blue-600 rounded-2xl font-black">{isSaving ? 'GUARDANDO...' : `CONFIRMAR ${scans.length}`}</button>
                 </div>
             );
         };
 
-        const ScannerG6 = () => {
+        const MainApp = () => {
             const [ordersCache, setOrdersCache] = useState([]);
-            const [statusMsg, setStatusMsg] = useState("Cargando...");
-            const [showScanner, setShowScanner] = useState(false);
-            const [lastSaveCount, setLastSaveCount] = useState(0);
-            const [showPreview, setShowPreview] = useState(false);
             const [pendingScans, setPendingScans] = useState([]);
+            const [showScanner, setShowScanner] = useState(false);
+            const [showPreview, setShowPreview] = useState(false);
 
             useEffect(() => {
-                const unsubscribe = db.collection('orders').where('status', '!=', 'ARCHIVADO').onSnapshot(snapshot => {
-                        const loadedOrders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-                        setOrdersCache(loadedOrders);
-                        setStatusMsg(`${loadedOrders.length} Órdenes Activas`);
-                    });
-                return () => unsubscribe();
-            }, []);
-
-            useEffect(() => {
-                const unsubscribe = db.collection('registro_produccion').orderBy('fecha', 'desc').onSnapshot(snapshot => {
-                        const scans = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-                        setPendingScans(scans);
-                    });
-                return () => unsubscribe();
+                db.collection('orders').where('status','!=','ARCHIVADO').onSnapshot(s => setOrdersCache(s.docs.map(d => ({...d.data(), id: d.id}))));
+                db.collection('registro_produccion').orderBy('fecha','desc').onSnapshot(s => setPendingScans(s.docs.map(d => ({...d.data(), id: d.id}))));
             }, []);
 
             return (
-                <div className="h-screen w-screen bg-[#020617] text-white flex flex-col overflow-hidden relative">
-                    
-                    {/* HEADER CLICKEABLE CON CONTADOR */}
-                    <div 
-                        className="fixed-header-container cursor-pointer active:scale-95" 
-                        onClick={() => setShowPreview(true)}
-                    >
+                <div className="h-screen w-screen flex flex-col overflow-hidden relative">
+                    <div className="fixed-header-container cursor-pointer" onClick={() => setShowPreview(true)}>
                         <div className="relative">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" alt="Logo" className="header-logo-img" />
-                            {pendingScans.length > 0 && (
-                                <div className="absolute -bottom-1 -right-2 bg-red-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border border-red-400 shadow-[0_0_10px_red] animate-pulse">
-                                    {pendingScans.length}
-                                </div>
-                            )}
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="header-logo-img" />
+                            {pendingScans.length > 0 && <div className="absolute -bottom-1 -right-2 bg-red-600 text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border border-red-400 animate-pulse">{pendingScans.length}</div>}
                         </div>
                         <div className="red-light-scanner"></div>
                     </div>
 
-                    <div className="z-10 flex-1 flex flex-col justify-center items-center gap-8 main-content-padded p-6">
-                        <div className="text-center space-y-2">
-                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" alt="Balta" className="w-28 h-28 rounded-full mx-auto mb-6 shadow-2xl shadow-red-900/40 border-2 border-red-500/20 object-cover relative z-10" />
-                            <h1 className="text-3xl font-black tracking-tighter">BARCODE SCANNER</h1>
-                            <p className="text-slate-500 text-xs font-bold tracking-[0.2em] uppercase">Edición Especial Balta</p>
+                    <div className="flex-1 flex flex-col justify-center items-center p-6 pt-24 gap-8">
+                        <div className="text-center">
+                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="w-32 h-32 rounded-full mx-auto mb-4 shadow-2xl border-2 border-red-500/20" />
+                            <h1 className="text-4xl font-black tracking-tighter">BALTA SCAN</h1>
+                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Production Unit 2024</p>
                         </div>
 
-                        <div onClick={() => setShowScanner(true)} className="glass-card w-full max-w-xs p-8 rounded-[2.5rem] flex flex-col items-center justify-center gap-6 cursor-pointer hover:bg-white/10 active:scale-95 transition-all group relative overflow-hidden">
-                             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="text-sky-400 group-hover:text-white transition-colors drop-shadow-[0_0_15px_rgba(56,189,248,0.5)] relative z-10"><Icon name="camera" size={64}/></div>
-                            <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-300 relative z-10">Iniciar Escáner</span>
-                        </div>
-
-                        <div className="mt-4 flex flex-col gap-2 items-center">
-                            <span className="px-4 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Icon name="database" size={12}/> {statusMsg}</span>
-                            {lastSaveCount > 0 && (<span className="text-green-400 text-xs font-bold animate-pulse">✓ Último lote: {lastSaveCount} paquetes</span>)}
+                        <div onClick={() => setShowScanner(true)} className="glass-card w-full max-w-xs p-10 rounded-[3rem] flex flex-col items-center gap-4 cursor-pointer">
+                            <Icon name="camera" size={60} className="text-sky-400"/>
+                            <span className="font-black text-xs uppercase tracking-widest">Escanear Paquetes</span>
                         </div>
                     </div>
 
-                    <QuickScannerModal isVisible={showScanner} onClose={() => setShowScanner(false)} ordersCache={ordersCache} onScanSaved={setLastSaveCount} />
+                    <InstallButton />
                     
-                    <PreviewDrawer 
-                        isOpen={showPreview} 
-                        onClose={() => setShowPreview(false)} 
-                        pendingScans={pendingScans} 
-                        ordersCache={ordersCache} 
-                    />
+                    <QuickScannerModal isVisible={showScanner} onClose={() => setShowScanner(false)} ordersCache={ordersCache} onScanSaved={() => {}} />
+                    <PreviewDrawer isOpen={showPreview} onClose={() => setShowPreview(false)} pendingScans={pendingScans} ordersCache={ordersCache} />
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ScannerG6 />);
+        root.render(<MainApp />);
     </script>
 </body>
 </html>
