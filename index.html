@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balta Escanear v5</title>
+    <title>Balta Scan v7</title>
     
+    <meta property="og:title" content="Balta Scan - Producción">
+    <meta property="og:description" content="Sistema de escaneo de paquetes Balta.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png">
+    <meta property="og:type" content="website">
+
     <meta name="theme-color" content="#020617">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Balta Scan">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png">
     
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkJhbHRhIFNjYW4iLAogICJzaG9ydF9uYW1lIjogIkJhbHRhU2NhbiIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDIwNjE3IiwKICAidGhlbWVfY29sb3IiOiAiIzAyMDYxNyIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9qZXN1c3ZuMTk5M21wbHZ0My1haS9QbGFuaWZpY2Fkb3IvcmVmcy9oZWFkcy9tYWluL0JhbHRhLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -24,48 +30,22 @@
     <style>
         body { margin: 0; background: #020617; font-family: 'Inter', sans-serif; overflow: hidden; color: white; overscroll-behavior: none; }
         .glass-card { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .glass-card:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.15); }
         
-        .fixed-header-container {
-            position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
-            background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(12px);
-            padding: 10px 0; display: flex; justify-content: center;
-            border-bottom: 1px solid rgba(255, 0, 0, 0.15);
-        }
-        .header-logo-img { height: 50px; width: auto; object-fit: contain; filter: drop-shadow(0 0 8px rgba(255,0,0,0.3)); }
-        
-        .red-light-scanner {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 3px;
-            background: linear-gradient(90deg, transparent 0%, #ff0000 50%, transparent 100%);
-            box-shadow: 0 0 20px 5px rgba(255, 0, 0, 0.7);
-            animation: scanMove 2.5s infinite linear;
-        }
-        @keyframes scanMove { 0% { transform: translateX(-100%); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateX(100%); opacity: 0; } }
+        /* Botón de cierre personalizado */
+        .btn-close-balta { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); }
+        .balta-mini-logo { width: 32px; height: 32px; border-radius: 50%; z-index: 10; }
+        .x-black-bg { position: absolute; font-weight: 900; font-size: 38px; color: black; z-index: 5; transform: translateY(-1px); }
 
-        .drawer-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
-        .drawer-content { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: #0f172a; border-left: 1px solid #1e293b; }
+        .fixed-header-container { position: fixed; top: 0; left: 0; width: 100%; z-index: 100; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(12px); padding: 10px 0; display: flex; justify-content: center; border-bottom: 1px solid rgba(255, 0, 0, 0.15); }
+        .header-logo-img { height: 50px; width: auto; filter: drop-shadow(0 0 8px rgba(255,0,0,0.3)); }
         
-        .preview-card {
-            display: flex; height: 130px; border-radius: 12px; overflow: hidden; 
-            background: #1e293b; border: 1px solid #334155; 
-        }
-        .preview-img-col { width: 35%; height: 100%; position: relative; background: #000; overflow: hidden; }
-        .preview-img-col img { width: 100%; height: 100%; object-fit: cover; }
-        .preview-data-col { width: 65%; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
+        .red-light-scanner { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent 0%, #ff0000 50%, transparent 100%); animation: scanMove 2.5s infinite linear; }
+        @keyframes scanMove { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
-        #reader { width: 100% !important; border: none !important; height: 100% !important; }
-        #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 12px; }
-        
-        .scan-window { 
-            height: 150px; width: 100%; border: 2px solid #0ea5e9; border-radius: 16px; 
-            overflow: hidden; position: relative; background: #000;
-        }
-        .scan-laser { 
-            position: absolute; width: 100%; height: 2px; background: #38bdf8; 
-            box-shadow: 0 0 15px #38bdf8; 
-            animation: laserMove 2s infinite linear; z-index: 10; top: 0;
-        }
-        @keyframes laserMove { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+        .scan-window { height: 160px; width: 100%; border: 2px solid #3b82f6; border-radius: 20px; overflow: hidden; position: relative; background: #000; }
+        #reader video { object-fit: cover !important; }
+        .wait-overlay { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.8); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -76,7 +56,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // Configuración Firebase (Omitida por brevedad, usa la tuya)
         const firebaseConfig = {
             apiKey: "AIzaSyBqHgV4vDat1-VmZfKbiPg7nuiX-ROcexw",
             authDomain: "cirineo-cec21.firebaseapp.com",
@@ -87,220 +66,181 @@
         };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const FieldValue = firebase.firestore.FieldValue;
 
-        const SUCCESS_SOUND_URL = "https://github.com/jesusvn1993mplvt3-ai/TejidoBalta/raw/refs/heads/main/Data/author.mp3";
-        const successAudio = new Audio(SUCCESS_SOUND_URL);
+        const SUCCESS_SOUND = new Audio("https://github.com/jesusvn1993mplvt3-ai/TejidoBalta/raw/refs/heads/main/Data/author.mp3");
 
-        const Icon = ({ name, size = 24, className, onClick }) => {
+        const Icon = ({ name, size = 24, className }) => {
             const ref = useRef(null);
-            useEffect(() => {
-                if (ref.current && lucide.icons[name]) {
-                    ref.current.innerHTML = lucide.icons[name].toSvg({ width: size, height: size, class: className });
-                }
-            }, [name, className, size]);
-            return <span ref={ref} onClick={onClick} className={`inline-flex items-center justify-center ${onClick ? 'cursor-pointer' : ''}`}></span>;
+            useEffect(() => { if (ref.current && lucide.icons[name]) { ref.current.innerHTML = lucide.icons[name].toSvg({ width: size, height: size, class: className }); } }, [name, className, size]);
+            return <span ref={ref} className="inline-flex"></span>;
         };
 
-        // --- COMPONENTE BOTÓN INSTALAR ---
-        const InstallButton = () => {
-            const [deferredPrompt, setDeferredPrompt] = useState(null);
-            const [isVisible, setIsVisible] = useState(false);
+        const CloseButtonBalta = ({ onClick }) => (
+            <button onClick={onClick} className="btn-close-balta">
+                <span className="x-black-bg">X</span>
+                <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="balta-mini-logo" />
+            </button>
+        );
 
-            useEffect(() => {
-                window.addEventListener('beforeinstallprompt', (e) => {
-                    e.preventDefault();
-                    setDeferredPrompt(e);
-                    setIsVisible(true);
-                });
-
-                window.addEventListener('appinstalled', () => {
-                    setIsVisible(false);
-                    setDeferredPrompt(null);
-                });
-            }, []);
-
-            const handleInstall = async () => {
-                if (!deferredPrompt) return;
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    setIsVisible(false);
-                    setDeferredPrompt(null);
-                }
-            };
-
-            if (!isVisible) return null;
-
-            return (
-                <button 
-                    onClick={handleInstall}
-                    className="fixed bottom-6 left-6 right-6 bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 shadow-2xl shadow-blue-900/40 animate-bounce z-[400] border border-blue-400/30"
-                >
-                    <Icon name="download" size={20}/>
-                    INSTALAR APP EN CELULAR
-                </button>
-            );
-        };
-
-        // ... (Componentes SmartImage, PreviewDrawer y QuickScannerModal se mantienen igual que la v4)
-
-        const SmartImage = ({ modelo }) => {
-            const BASE_URL = "https://raw.githubusercontent.com/sweaters-liliana/MAES26/refs/heads/main/IMAGENES/PAPELETAS/";
-            const [src, setSrc] = useState(`${BASE_URL}${modelo}.png`);
-            const [errorCount, setErrorCount] = useState(0);
-            const handleError = () => { if (errorCount === 0) { setSrc(`${BASE_URL}${modelo}.jpg`); setErrorCount(1); } else { setSrc(null); } };
-            if (!src) return <div className="w-full h-full flex items-center justify-center text-slate-600 text-[10px] font-bold bg-slate-900 uppercase">Sin Foto</div>;
-            return <img src={src} onError={handleError} alt={modelo} />;
-        };
-
-        const PreviewDrawer = ({ isOpen, onClose, pendingScans, ordersCache }) => {
-            if (!isOpen) return null;
-            return (
-                <div className="fixed inset-0 z-[300] flex justify-end drawer-overlay" onClick={onClose}>
-                    <div className="w-full max-w-sm h-full drawer-content flex flex-col shadow-2xl border-l-2 border-blue-500/30" onClick={e => e.stopPropagation()}>
-                        <div className="bg-[#020617] p-4 border-b border-slate-800 flex justify-between items-center">
-                            <div>
-                                <h2 className="text-white font-black text-xl flex items-center gap-2">
-                                    <Icon name="list-checks" className="text-blue-500"/> CONSOLIDADOR
-                                </h2>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{pendingScans.length} PENDIENTES</p>
-                            </div>
-                            <button onClick={onClose} className="p-2 bg-slate-800 rounded-full text-white"><Icon name="x" size={20}/></button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0f172a]">
-                            {pendingScans.map(scan => {
-                                const order = ordersCache.find(o => String(o.id) === String(scan.orderId));
-                                return (
-                                    <div key={scan.id} className="preview-card animate-fade-in">
-                                        <div className="preview-img-col"><SmartImage modelo={scan.modelo} /></div>
-                                        <div className="preview-data-col">
-                                            <div className="flex justify-between items-start border-b border-slate-700/50 pb-1">
-                                                <span className="font-mono font-black text-lg text-white">{scan.codigo_paquete}</span>
-                                                <span className="bg-blue-600 text-[9px] px-1.5 py-0.5 rounded font-bold">Pqt {scan.paquete_indice}</span>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-1 text-[11px]">
-                                                <span className="text-slate-500 font-bold uppercase italic">{scan.modelo}</span>
-                                                <span className="text-right text-yellow-400 font-black">{order?.maquina || '??'}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
+        // --- COMPONENTE SCANNER CON ESPERA ---
         const QuickScannerModal = ({ isVisible, onClose, ordersCache, onScanSaved }) => {
             const [scans, setScans] = useState([]);
-            const [isSaving, setIsSaving] = useState(false);
+            const [isWaiting, setIsWaiting] = useState(false);
+            const [countdown, setCountdown] = useState(0);
+            const [msg, setMsg] = useState("");
             const html5QrCodeRef = useRef(null);
-            
+
             useEffect(() => {
-                if (isVisible) { startScanner(); } else { stopScanner(); }
+                if (isVisible) startScanner(); else stopScanner();
                 return () => stopScanner();
             }, [isVisible]);
 
             const startScanner = async () => {
                 try {
-                    const html5QrCode = new Html5Qrcode("reader");
-                    html5QrCodeRef.current = html5QrCode;
-                    await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 100 } }, 
-                        (decodedText) => {
-                            const cleanCode = decodedText.trim().toUpperCase();
-                            if (scans.some(s => s.code === cleanCode)) return;
-                            
-                            let found = null;
-                            ordersCache.forEach(o => {
-                                const p = o.progreso?.find(p => p.codigoUnico === cleanCode);
-                                if (p) found = { code: cleanCode, orderId: o.id, modelo: o.codigo, partida: o.partida, paquete_indice: p.paqueteNum, paquete_total: p.paquetesDePieza, piezas_en_paquete: p.cantidad, tejedor: "Balta" };
-                            });
-
-                            if (found) {
-                                successAudio.play();
-                                setScans(prev => [found, ...prev]);
-                            }
-                        }, () => {});
-                } catch (e) {}
+                    const scanner = new Html5Qrcode("reader");
+                    html5QrCodeRef.current = scanner;
+                    await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: { width: 280, height: 120 } }, onScanSuccess, () => {});
+                } catch (e) { setMsg("Error al abrir cámara"); }
             };
 
             const stopScanner = async () => { if (html5QrCodeRef.current) { await html5QrCodeRef.current.stop(); html5QrCodeRef.current = null; } };
 
-            const save = async () => {
-                setIsSaving(true);
+            const onScanSuccess = (decodedText) => {
+                if (isWaiting) return;
+                const code = decodedText.trim().toUpperCase();
+
+                // Validar si ya se escaneó en esta sesión
+                if (scans.some(s => s.code === code)) {
+                    setMsg(`⚠️ CÓDIGO REPETIDO: ${code}`);
+                    return;
+                }
+
+                // Buscar en base de datos local (cache)
+                let pkgData = null;
+                ordersCache.forEach(order => {
+                    const pkg = order.progreso?.find(p => p.codigoUnico === code);
+                    if (pkg) pkgData = { code, orderId: order.id, modelo: order.codigo, num: pkg.paqueteNum, total: pkg.paquetesDePieza };
+                });
+
+                if (pkgData) {
+                    SUCCESS_SOUND.play();
+                    setScans(prev => [pkgData, ...prev]);
+                    setMsg(`✅ REGISTRADO: ${pkgData.modelo}`);
+                    activateCooldown();
+                } else {
+                    setMsg("❌ CÓDIGO NO VÁLIDO");
+                }
+            };
+
+            const activateCooldown = () => {
+                setIsWaiting(true);
+                setCountdown(5);
+                const timer = setInterval(() => {
+                    setCountdown(prev => {
+                        if (prev <= 1) { clearInterval(timer); setIsWaiting(false); return 0; }
+                        return prev - 1;
+                    });
+                }, 1000);
+            };
+
+            const saveLote = async () => {
                 const batch = db.batch();
                 scans.forEach(s => {
                     const ref = db.collection('registro_produccion').doc();
-                    batch.set(ref, { ...s, codigo_paquete: s.code, fecha: FieldValue.serverTimestamp(), fecha_legible: new Date().toLocaleString(), tipo: "produccion" });
+                    batch.set(ref, { ...s, codigo_paquete: s.code, fecha: firebase.firestore.FieldValue.serverTimestamp(), tipo: "produccion", tejedor: "Balta" });
                 });
                 await batch.commit();
                 onScanSaved(scans.length);
                 onClose();
-                setIsSaving(false);
             };
 
             if (!isVisible) return null;
+
             return (
-                <div className="fixed inset-0 z-[500] bg-[#020617] flex flex-col p-6">
-                    <div className="flex justify-between mb-4 items-center">
-                        <h2 className="text-xl font-black">SCANNER ACTIVO</h2>
-                        <button onClick={onClose} className="p-2 bg-red-500/20 text-red-500 rounded-xl"><Icon name="x"/></button>
+                <div className="fixed inset-0 z-[500] bg-[#020617] flex flex-col p-6 animate-fade-in">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="font-black text-2xl tracking-tighter">SCANNER BALTA</h2>
+                        <CloseButtonBalta onClick={onClose} />
                     </div>
-                    <div className="scan-window mb-4"><div id="reader"></div><div className="scan-laser"></div></div>
+                    
+                    <div className="scan-window mb-4">
+                        <div id="reader"></div>
+                        {isWaiting && (
+                            <div className="wait-overlay">
+                                <span className="text-5xl font-black mb-2">{countdown}</span>
+                                <span className="text-[10px] font-bold tracking-widest text-blue-400">ESPERANDO...</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="text-center h-6 mb-4">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase">{msg}</span>
+                    </div>
+
                     <div className="flex-1 overflow-y-auto space-y-2 mb-4">
-                        {scans.map(s => <div key={s.code} className="glass-card p-3 rounded-xl flex justify-between font-mono text-sm"><span>{s.code}</span><span className="text-sky-400">{s.modelo}</span></div>)}
+                        {scans.map(s => (
+                            <div key={s.code} className="glass-card p-3 rounded-xl flex justify-between items-center border-l-4 border-blue-500">
+                                <div><div className="font-mono font-bold text-white">{s.code}</div><div className="text-[10px] text-slate-500 font-black">{s.modelo}</div></div>
+                                <span className="text-[10px] bg-blue-600 px-2 py-1 rounded font-bold">PQT {s.num}</span>
+                            </div>
+                        ))}
                     </div>
-                    <button onClick={save} disabled={scans.length === 0 || isSaving} className="w-full py-4 bg-blue-600 rounded-2xl font-black">{isSaving ? 'GUARDANDO...' : `CONFIRMAR ${scans.length}`}</button>
+
+                    <button onClick={saveLote} disabled={scans.length === 0} className={`w-full py-5 rounded-3xl font-black transition-all ${scans.length > 0 ? 'bg-blue-600 shadow-lg' : 'bg-slate-800 text-slate-500'}`}>
+                        CONFIRMAR {scans.length} PAQUETES
+                    </button>
                 </div>
             );
         };
 
-        const MainApp = () => {
-            const [ordersCache, setOrdersCache] = useState([]);
-            const [pendingScans, setPendingScans] = useState([]);
+        // --- APP PRINCIPAL ---
+        const App = () => {
+            const [orders, setOrders] = useState([]);
             const [showScanner, setShowScanner] = useState(false);
-            const [showPreview, setShowPreview] = useState(false);
+            const [deferredPrompt, setDeferredPrompt] = useState(null);
 
             useEffect(() => {
-                db.collection('orders').where('status','!=','ARCHIVADO').onSnapshot(s => setOrdersCache(s.docs.map(d => ({...d.data(), id: d.id}))));
-                db.collection('registro_produccion').orderBy('fecha','desc').onSnapshot(s => setPendingScans(s.docs.map(d => ({...d.data(), id: d.id}))));
+                db.collection('orders').where('status','!=','ARCHIVADO').onSnapshot(s => setOrders(s.docs.map(d => ({...d.data(), id: d.id}))));
+                window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); });
             }, []);
+
+            const installApp = () => {
+                if (deferredPrompt) { deferredPrompt.prompt(); setDeferredPrompt(null); }
+            };
 
             return (
                 <div className="h-screen w-screen flex flex-col overflow-hidden relative">
-                    <div className="fixed-header-container cursor-pointer" onClick={() => setShowPreview(true)}>
-                        <div className="relative">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="header-logo-img" />
-                            {pendingScans.length > 0 && <div className="absolute -bottom-1 -right-2 bg-red-600 text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border border-red-400 animate-pulse">{pendingScans.length}</div>}
-                        </div>
+                    <div className="fixed-header-container">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="header-logo-img" />
                         <div className="red-light-scanner"></div>
                     </div>
 
-                    <div className="flex-1 flex flex-col justify-center items-center p-6 pt-24 gap-8">
+                    <div className="flex-1 flex flex-col justify-center items-center p-8 pt-24 gap-12">
                         <div className="text-center">
-                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="w-32 h-32 rounded-full mx-auto mb-4 shadow-2xl border-2 border-red-500/20" />
+                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="w-36 h-36 rounded-full mx-auto mb-4 shadow-2xl border-2 border-red-500/20" />
                             <h1 className="text-4xl font-black tracking-tighter">BALTA SCAN</h1>
-                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Production Unit 2024</p>
+                            <p className="text-slate-500 text-[10px] font-black tracking-[0.3em] uppercase">Control Unit 2025</p>
                         </div>
 
-                        <div onClick={() => setShowScanner(true)} className="glass-card w-full max-w-xs p-10 rounded-[3rem] flex flex-col items-center gap-4 cursor-pointer">
-                            <Icon name="camera" size={60} className="text-sky-400"/>
-                            <span className="font-black text-xs uppercase tracking-widest">Escanear Paquetes</span>
+                        <div onClick={() => setShowScanner(true)} className="glass-card w-full max-w-xs py-12 rounded-[3rem] flex flex-col items-center gap-4 cursor-pointer active:scale-95">
+                            <Icon name="camera" size={64} className="text-blue-500"/>
+                            <span className="font-black text-xs tracking-widest uppercase">Escanear Producción</span>
                         </div>
+
+                        {deferredPrompt && (
+                            <button onClick={installApp} className="absolute bottom-10 bg-white text-black px-6 py-3 rounded-full font-black text-xs flex items-center gap-2 animate-bounce">
+                                <Icon name="download" size={16}/> INSTALAR APP
+                            </button>
+                        )}
                     </div>
 
-                    <InstallButton />
-                    
-                    <QuickScannerModal isVisible={showScanner} onClose={() => setShowScanner(false)} ordersCache={ordersCache} onScanSaved={() => {}} />
-                    <PreviewDrawer isOpen={showPreview} onClose={() => setShowPreview(false)} pendingScans={pendingScans} ordersCache={ordersCache} />
+                    <QuickScannerModal isVisible={showScanner} onClose={() => setShowScanner(false)} ordersCache={orders} onScanSaved={(n) => alert(`Guardado: ${n} paquetes`)} />
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<MainApp />);
+        root.render(<App />);
     </script>
 </body>
 </html>
