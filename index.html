@@ -14,15 +14,15 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
         body { margin: 0; background: #020617; font-family: 'Inter', sans-serif; color: white; overflow: hidden; }
         
-        /* Botón de cierre: X negra detrás del logo de Balta */
-        .btn-close-balta { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); z-index: 1000; }
+        /* Botón de cierre */
+        .btn-close-balta { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); z-index: 1000; cursor: pointer; }
         .balta-mini-logo { width: 32px; height: 32px; border-radius: 50%; z-index: 10; }
         .x-black-bg { position: absolute; font-weight: 900; font-size: 38px; color: black; z-index: 5; }
 
@@ -30,9 +30,11 @@
         .fixed-header-container { position: fixed; top: 0; left: 0; width: 100%; z-index: 100; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(12px); padding: 10px 0; display: flex; justify-content: center; border-bottom: 1px solid rgba(255, 0, 0, 0.15); }
         .header-logo-img { height: 50px; }
 
-        /* Scanner Frame */
-        .scan-wrapper { width: 100%; height: 200px; border: 3px solid #3b82f6; border-radius: 24px; position: relative; overflow: hidden; background: #000; }
-        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+        /* Scanner Frame - Arreglado para que no estire el video */
+        .scan-wrapper { width: 100%; height: 280px; border: 3px solid #3b82f6; border-radius: 24px; position: relative; overflow: hidden; background: #000; }
+        #reader { width: 100%; height: 100%; }
+        /* Importante: Sobrescribir estilos de la librería para evitar video gigante */
+        #reader video { object-fit: cover; width: 100% !important; height: 100% !important; border-radius: 20px; }
 
         /* Modal Consolidador (Lateral) */
         .drawer-container { position: fixed; inset: 0; z-index: 600; display: flex; justify-content: flex-end; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
@@ -43,7 +45,7 @@
         .preview-img { width: 70px; height: 100%; background: #000; flex-shrink: 0; }
         .preview-img img { width: 100%; height: 100%; object-fit: cover; }
 
-        .wait-overlay { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.9); z-index: 50; display: flex; items-center; justify-content: center; font-size: 4rem; font-weight: 900; color: #3b82f6; }
+        .wait-overlay { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.9); z-index: 50; display: flex; align-items: center; justify-content: center; font-size: 4rem; font-weight: 900; color: #3b82f6; }
     </style>
 </head>
 <body>
@@ -65,7 +67,6 @@
 
         const SUCCESS_SOUND = new Audio("https://github.com/jesusvn1993mplvt3-ai/TejidoBalta/raw/refs/heads/main/Data/author.mp3");
 
-        // Botón Cierre Balta-X
         const CloseButtonBalta = ({ onClick }) => (
             <button onClick={onClick} className="btn-close-balta">
                 <span className="x-black-bg">X</span>
@@ -73,14 +74,12 @@
             </button>
         );
 
-        // Foto Papeleta
         const SmartImage = ({ modelo }) => {
             const BASE = "https://raw.githubusercontent.com/sweaters-liliana/MAES26/refs/heads/main/IMAGENES/PAPELETAS/";
             const [src, setSrc] = useState(`${BASE}${modelo}.png`);
             return <img src={src} onError={() => setSrc(`${BASE}${modelo}.jpg`)} />;
         };
 
-        // --- EL CONSOLIDADOR (Drawer) ---
         const ConsolidadorDrawer = ({ isOpen, onClose, items }) => {
             if (!isOpen) return null;
             return (
@@ -110,51 +109,118 @@
             );
         };
 
-        // --- MODAL SCANNER ---
+        // --- SCANNER MODAL ARREGLADO ---
         const ScannerModal = ({ isVisible, onClose, ordersCache }) => {
             const [scans, setScans] = useState([]);
             const [wait, setWait] = useState(0);
-            const [msg, setMsg] = useState("");
+            const [msg, setMsg] = useState("Escanea el QR");
+            
+            // Usamos refs para acceder al estado actual dentro del callback del escaner
+            const scansRef = useRef([]);
             const qrRef = useRef(null);
+            const waitRef = useRef(0);
+
+            // Sincronizar ref con estado
+            useEffect(() => { scansRef.current = scans; }, [scans]);
+            useEffect(() => { waitRef.current = wait; }, [wait]);
 
             useEffect(() => {
+                let html5QrCode;
+
                 if (isVisible) {
-                    const qr = new Html5Qrcode("reader");
-                    qrRef.current = qr;
-                    qr.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => {
-                        if (wait > 0) return;
-                        const code = text.trim().toUpperCase();
-                        if (scans.some(s => s.code === code)) { setMsg("⚠️ REPETIDO"); return; }
-                        
-                        let found = null;
-                        ordersCache.forEach(o => {
-                            const p = o.progreso?.find(pkg => pkg.codigoUnico === code);
-                            if (p) found = { code, modelo: o.codigo, id: o.id };
+                    // Pequeño timeout para asegurar que el DIV existe
+                    const timer = setTimeout(() => {
+                        html5QrCode = new Html5Qrcode("reader");
+                        qrRef.current = html5QrCode;
+
+                        const config = { 
+                            fps: 10, 
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0 
+                        };
+
+                        html5QrCode.start(
+                            { facingMode: "environment" }, 
+                            config, 
+                            (text) => {
+                                // Lógica de escaneo
+                                if (waitRef.current > 0) return;
+
+                                const code = text.trim().toUpperCase();
+                                
+                                // Verificar duplicados usando la Ref (estado actualizado)
+                                if (scansRef.current.some(s => s.code === code)) {
+                                    setMsg("⚠️ YA ESCANEADO");
+                                    return;
+                                }
+                                
+                                let found = null;
+                                ordersCache.forEach(o => {
+                                    const p = o.progreso?.find(pkg => pkg.codigoUnico === code);
+                                    if (p) found = { code, modelo: o.codigo, id: o.id };
+                                });
+
+                                if (found) {
+                                    SUCCESS_SOUND.play().catch(e => console.log("Audio error", e));
+                                    setScans(prev => [found, ...prev]);
+                                    setMsg(`✅ ${found.modelo}`);
+                                    setWait(3); // Pausa de 3 segundos
+                                } else {
+                                    setMsg("❌ CÓDIGO NO ENCONTRADO");
+                                }
+                            },
+                            (errorMessage) => {
+                                // Error de lectura (normal mientras busca)
+                            }
+                        ).catch(err => {
+                            console.error("Error iniciando cámara", err);
+                            setMsg("Error de cámara: Permisos");
                         });
+                    }, 100);
 
-                        if (found) {
-                            SUCCESS_SOUND.play();
-                            setScans(prev => [found, ...prev]);
-                            setMsg(`✅ ${found.modelo}`);
-                            setWait(5);
-                        } else { setMsg("❌ NO VÁLIDO"); }
-                    });
-                } else if (qrRef.current) {
-                    qrRef.current.stop();
+                    return () => clearTimeout(timer);
                 }
-            }, [isVisible]);
 
+                // Cleanup Function: Se ejecuta al cerrar el modal
+                return () => {
+                    if (qrRef.current) {
+                        if(qrRef.current.isScanning) {
+                            qrRef.current.stop().then(() => {
+                                qrRef.current.clear();
+                                qrRef.current = null;
+                            }).catch(err => console.error("Error al detener", err));
+                        } else {
+                            qrRef.current.clear();
+                        }
+                    }
+                };
+            }, [isVisible]); // Solo reiniciar si cambia isVisible
+
+            // Contador de espera
             useEffect(() => {
                 if (wait > 0) {
-                    const t = setTimeout(() => setWait(wait - 1), 1000);
+                    const t = setTimeout(() => setWait(prev => prev - 1), 1000);
                     return () => clearTimeout(t);
                 }
             }, [wait]);
 
             const confirm = async () => {
+                if (scans.length === 0) {
+                    onClose();
+                    return;
+                }
                 const b = db.batch();
-                scans.forEach(s => b.set(db.collection('registro_produccion').doc(), { ...s, fecha: firebase.firestore.FieldValue.serverTimestamp(), tejedor: "Balta" }));
+                scans.forEach(s => {
+                    const ref = db.collection('registro_produccion').doc();
+                    b.set(ref, { 
+                        ...s, 
+                        fecha: firebase.firestore.FieldValue.serverTimestamp(), 
+                        tejedor: "Balta",
+                        device: navigator.userAgent
+                    });
+                });
                 await b.commit();
+                setScans([]); // Limpiar lista tras confirmar
                 onClose();
             };
 
@@ -162,19 +228,39 @@
 
             return (
                 <div className="fixed inset-0 z-[700] bg-[#020617] flex flex-col p-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="font-black text-blue-500">ESCÁNER</h2>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="font-black text-blue-500 text-xl">ESCÁNER</h2>
                         <CloseButtonBalta onClick={onClose} />
                     </div>
-                    <div className="scan-wrapper mb-4">
+                    
+                    <div className="scan-wrapper mb-4 shadow-lg shadow-blue-900/20">
                         <div id="reader"></div>
-                        {wait > 0 && <div className="wait-overlay">{wait}</div>}
+                        {wait > 0 && (
+                            <div className="wait-overlay animate-pulse">
+                                <span>{wait}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="text-center h-4 mb-4 text-[10px] font-black">{msg}</div>
-                    <div className="flex-1 overflow-y-auto space-y-2 mb-4">
-                        {scans.map(s => <div key={s.code} className="bg-slate-900 p-2 rounded-lg flex justify-between text-xs"><span>{s.code}</span><span className="text-blue-500">{s.modelo}</span></div>)}
+
+                    <div className="text-center py-2 mb-2 bg-slate-900/50 rounded text-sm font-black text-white border border-slate-700">
+                        {msg}
                     </div>
-                    <button onClick={confirm} className="w-full py-5 bg-blue-600 rounded-full font-black uppercase text-xs">Confirmar Lote</button>
+
+                    <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-1">
+                        {scans.map((s, idx) => (
+                            <div key={idx} className="bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center text-sm shadow-sm">
+                                <span className="font-mono text-slate-300">{s.code}</span>
+                                <span className="text-blue-400 font-black">{s.modelo}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <button 
+                        onClick={confirm} 
+                        className="w-full py-4 bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all rounded-xl font-black uppercase text-sm shadow-lg shadow-blue-600/30 text-white tracking-widest"
+                    >
+                        {scans.length > 0 ? `Confirmar (${scans.length})` : "Cerrar"}
+                    </button>
                 </div>
             );
         };
@@ -186,33 +272,39 @@
             const [showCons, setShowCons] = useState(false);
 
             useEffect(() => {
-                db.collection('orders').where('status','!=','ARCHIVADO').onSnapshot(s => setOrders(s.docs.map(d => ({...d.data(), id: d.id}))));
-                db.collection('registro_produccion').orderBy('fecha','desc').limit(10).onSnapshot(s => setRecent(s.docs.map(d => d.data())));
+                const unsubOrders = db.collection('orders').where('status','!=','ARCHIVADO').onSnapshot(s => {
+                    setOrders(s.docs.map(d => ({...d.data(), id: d.id})));
+                });
+                const unsubRecent = db.collection('registro_produccion').orderBy('fecha','desc').limit(20).onSnapshot(s => {
+                    setRecent(s.docs.map(d => d.data()));
+                });
+                return () => { unsubOrders(); unsubRecent(); }
             }, []);
 
             return (
-                <div className="h-screen w-screen flex flex-col">
+                <div className="h-screen w-screen flex flex-col bg-[#020617]">
                     <div className="fixed-header-container">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="header-logo-img" />
                     </div>
 
                     <div className="flex-1 flex flex-col items-center justify-center p-8 gap-12">
-                        <div className="text-center">
-                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="w-40 h-40 rounded-full mx-auto mb-4" />
-                            <h1 className="text-4xl font-black italic">BALTA SCAN</h1>
+                        <div className="text-center animate-fade-in">
+                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="w-36 h-36 rounded-full mx-auto mb-6 shadow-2xl shadow-blue-900/50 border-4 border-slate-800" />
+                            <h1 className="text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white">BALTA SCAN</h1>
                         </div>
 
-                        <div onClick={() => setShowScan(true)} className="w-full max-w-xs py-14 bg-white/5 border border-white/10 rounded-[3rem] flex flex-col items-center gap-4 cursor-pointer">
-                            <div className="bg-blue-600 p-4 rounded-full"><span className="font-black text-2xl">📸</span></div>
-                            <span className="font-black text-xs uppercase tracking-widest">Escaneo Producción</span>
+                        <div onClick={() => setShowScan(true)} className="w-full max-w-xs py-12 bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700 rounded-[2.5rem] flex flex-col items-center gap-4 cursor-pointer hover:border-blue-500 transition-colors shadow-2xl active:scale-95">
+                            <div className="bg-blue-600 p-5 rounded-full shadow-[0_0_20px_rgba(37,99,235,0.5)]">
+                                <span className="font-black text-3xl text-white">📸</span>
+                            </div>
+                            <span className="font-black text-xs uppercase tracking-[0.2em] text-blue-200">Iniciar Escaneo</span>
                         </div>
                     </div>
 
-                    {/* BOTÓN CJNG PIE DE PÁGINA (ABRE CONSOLIDADOR) */}
-                    <div className="p-6 flex justify-end bg-slate-900/50 border-t border-slate-800">
-                        <div className="relative cursor-pointer" onClick={() => setShowCons(true)}>
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="w-14 h-14 object-contain filter drop-shadow-[0_0_8px_red]" />
-                            {recent.length > 0 && <div className="absolute -top-1 -right-1 bg-red-600 text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-2 border-[#020617] font-black">{recent.length}</div>}
+                    <div className="p-6 flex justify-end bg-slate-900/80 backdrop-blur border-t border-slate-800 safe-area-bottom">
+                        <div className="relative cursor-pointer group" onClick={() => setShowCons(true)}>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="w-16 h-16 object-contain filter drop-shadow-[0_0_8px_rgba(255,0,0,0.5)] group-hover:scale-110 transition-transform" />
+                            {recent.length > 0 && <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-2 border-[#020617] font-black animate-bounce">{recent.length}</div>}
                         </div>
                     </div>
 
