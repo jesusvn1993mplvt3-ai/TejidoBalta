@@ -96,8 +96,9 @@
                                     <div key={i} className="preview-card">
                                         <div className="preview-img"><SmartImage modelo={item.modelo} /></div>
                                         <div className="p-2 flex flex-col justify-center overflow-hidden">
-                                            <span className="font-mono font-bold text-white text-xs truncate">{item.code}</span>
+                                            <span className="font-mono font-bold text-white text-xs truncate">{item.codigo_paquete || item.code}</span>
                                             <span className="text-[10px] text-blue-400 font-black uppercase">{item.modelo}</span>
+                                            <span className="text-[9px] text-slate-400">Pqt: {item.paquete_indice}</span>
                                         </div>
                                     </div>
                                 ))
@@ -139,7 +140,6 @@
                             Html5QrcodeSupportedFormats.CODE_93
                         ];
 
-                        // Instanciar con los formatos restringidos
                         html5QrCode = new Html5Qrcode("reader", { 
                             formatsToSupport: supportedFormats, 
                             verbose: false 
@@ -148,8 +148,7 @@
                         qrRef.current = html5QrCode;
 
                         const config = { 
-                            fps: 15, // Aumentado ligeramente para fluidez en barras
-                            // qrbox Rectangular para simular lector de barras
+                            fps: 15,
                             qrbox: { width: 300, height: 120 },
                             aspectRatio: 1.0 
                         };
@@ -169,8 +168,20 @@
                                 
                                 let found = null;
                                 ordersCache.forEach(o => {
+                                    // Buscar paquete específico dentro de la orden
                                     const p = o.progreso?.find(pkg => pkg.codigoUnico === code);
-                                    if (p) found = { code, modelo: o.codigo, id: o.id };
+                                    if (p) {
+                                        // CORRECCIÓN AQUÍ: Se agregan todos los campos que el Consolidador necesita
+                                        found = { 
+                                            code: code,                // Para uso interno
+                                            codigo_paquete: code,      // Nombre que espera el consolidador
+                                            modelo: o.codigo, 
+                                            orderId: o.id,             // CRUCIAL: 'orderId' en lugar de 'id' para vincular máquina
+                                            partida: o.partida || "S/N",
+                                            paquete_indice: p.paqueteNum || 0,
+                                            paquete_total: o.progreso ? o.progreso.length : 0
+                                        };
+                                    }
                                 });
 
                                 if (found) {
@@ -228,7 +239,7 @@
                         fecha: firebase.firestore.FieldValue.serverTimestamp(), 
                         tejedor: "Balta",
                         device: navigator.userAgent,
-                        tipo_scan: "BARCODE" // Opcional: para saber que fue escaneo de barras
+                        tipo_scan: "BARCODE" 
                     });
                 });
                 await b.commit();
@@ -252,7 +263,6 @@
                                 <span>{wait}</span>
                             </div>
                         )}
-                        {/* Guía visual para barras (línea roja opcional) */}
                         <div className="absolute top-1/2 left-[10%] right-[10%] h-0.5 bg-red-500/50 pointer-events-none"></div>
                     </div>
 
@@ -263,7 +273,10 @@
                     <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-1">
                         {scans.map((s, idx) => (
                             <div key={idx} className="bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center text-sm shadow-sm">
-                                <span className="font-mono text-slate-300">{s.code}</span>
+                                <div>
+                                    <span className="block font-mono text-slate-300 text-xs">{s.code}</span>
+                                    <span className="text-[10px] text-slate-500">Pqt: {s.paquete_indice}</span>
+                                </div>
                                 <span className="text-blue-400 font-black">{s.modelo}</span>
                             </div>
                         ))}
