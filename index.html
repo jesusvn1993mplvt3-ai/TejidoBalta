@@ -3,356 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balta Scan v16 - Hybrid Auth Mode</title>
-    
-    <meta name="theme-color" content="#020617">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png">
-    
+    <title>Balta Scan v16</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
     <style>
-        body { margin: 0; background: #020617; font-family: 'Inter', sans-serif; color: white; overflow: hidden; }
-        .btn-close-balta { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); z-index: 1000; cursor: pointer; }
-        .balta-mini-logo { width: 32px; height: 32px; border-radius: 50%; z-index: 10; }
-        .x-black-bg { position: absolute; font-weight: 900; font-size: 38px; color: black; z-index: 5; }
-        .fixed-header-container { position: fixed; top: 0; left: 0; width: 100%; z-index: 100; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(12px); padding: 10px 0; display: flex; justify-content: center; border-bottom: 1px solid rgba(255, 0, 0, 0.15); }
-        .header-logo-img { height: 50px; }
-        .scan-wrapper { width: 100%; height: 260px; border: 3px solid #3b82f6; border-radius: 24px; position: relative; overflow: hidden; background: #000; }
-        .scan-wrapper.error { border-color: #ef4444; }
-        .scan-wrapper.success { border-color: #22c55e; }
-        #reader { width: 100%; height: 100%; }
-        #reader video { object-fit: cover; width: 100% !important; height: 100% !important; border-radius: 20px; }
-        .drawer-container { position: fixed; inset: 0; z-index: 600; display: flex; justify-content: flex-end; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
-        .drawer-content { width: 85%; max-width: 320px; height: 100%; background: #0f172a; border-left: 2px solid #3b82f6; animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        .preview-card { background: #1e293b; border-radius: 12px; display: flex; height: 85px; overflow: hidden; border: 1px solid #334155; margin-bottom: 12px; }
-        .preview-img { width: 70px; height: 100%; background: #000; flex-shrink: 0; }
-        .preview-img img { width: 100%; height: 100%; object-fit: cover; }
-        .wait-overlay { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.95); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .countdown-text { font-size: 6rem; font-weight: 900; color: #3b82f6; }
-        .auth-container { animation: fadeInUp 0.3s ease-out; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        body { margin: 0; background: #020617; font-family: sans-serif; color: white; overflow: hidden; }
+        #reader { width: 100% !important; border: none !important; }
+        #reader video { object-fit: cover !important; width: 100% !important; height: 300px !important; border-radius: 24px; }
+        .scan-container { border: 4px solid #3b82f6; border-radius: 28px; overflow: hidden; position: relative; background: #000; min-height: 300px; }
+        .overlay-wait { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 40; border-radius: 24px; }
     </style>
 </head>
 <body>
     <div id="root"></div>
-
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
-        const firebaseConfig = { apiKey: "AIzaSyCngQL1pdqghv2vbjkPycT1Xf0C46f7jYs", authDomain: "cirineo-cec21.firebaseapp.com", projectId: "cirineo-cec21", storageBucket: "cirineo-cec21.firebasestorage.app", messagingSenderId: "620210618284", appId: "1:620210618284:web:482bab9bf74650fff18409" };
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCngQL1pdqghv2vbjkPycT1Xf0C46f7jYs", 
+            authDomain: "cirineo-cec21.firebaseapp.com", 
+            projectId: "cirineo-cec21", 
+            storageBucket: "cirineo-cec21.firebasestorage.app", 
+            messagingSenderId: "620210618284", 
+            appId: "1:620210618284:web:482bab9bf74650fff18409" 
+        };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        
-        const SOUNDS = {
-            success: new Audio("https://github.com/jesusvn1993mplvt3-ai/TejidoBalta/raw/refs/heads/main/Data/author.mp3"),
-            error: new Audio("https://www.myinstants.com/media/sounds/error-sound-effect-pack-2.mp3")
-        };
 
-        const Icon = ({ name, size=16, className="" }) => {
-            const r = useRef(null);
-            useEffect(() => { if (r.current && lucide.icons[name]) r.current.innerHTML = lucide.icons[name].toSvg({ width: size, height: size }); }, [name, size]);
-            return <span ref={r} className={`inline-flex items-center justify-center ${className}`}/>;
-        };
-
-        const SmartImage = ({ modelo }) => {
-            const BASE = "https://raw.githubusercontent.com/sweaters-liliana/MAES26/refs/heads/main/IMAGENES/PAPELETAS/";
-            const [src, setSrc] = useState(`${BASE}${modelo}.png`);
-            return <img src={src} onError={() => setSrc(`${BASE}${modelo}.jpg`)} className="w-full h-full object-contain" />;
-        };
-
-        const ScannerModal = ({ isVisible, onClose }) => {
-            const [scanStatus, setScanStatus] = useState("idle"); // idle, pending_auth, error, success
+        const App = () => {
+            const [active, setActive] = useState(false);
+            const [pending, setPending] = useState(null);
             const [msg, setMsg] = useState("Listo para escanear");
             const [wait, setWait] = useState(0);
-            const [pendingData, setPendingData] = useState(null); // Aquí guardamos ya sea Kit o Pieza
-            
-            const [kitsDB, setKitsDB] = useState([]);
-            const [scannedHistory, setScannedHistory] = useState([]); 
-            const [ordersCache, setOrdersCache] = useState([]);
-            
-            const qrRef = useRef(null);
-            const waitRef = useRef(0);
-            const statusRef = useRef("idle");
-
-            useEffect(() => { waitRef.current = wait; }, [wait]);
-            useEffect(() => { statusRef.current = scanStatus; }, [scanStatus]);
+            const [kits, setKits] = useState([]);
+            const [orders, setOrders] = useState([]);
+            const html5QrCode = useRef(null);
 
             useEffect(() => {
-                db.collection('kits_produccion').onSnapshot(s => setKitsDB(s.docs.map(d => d.data())));
-                db.collection('orders').onSnapshot(s => setOrdersCache(s.docs.map(d => ({...d.data(), id: d.id}))));
-                return db.collection('registro_produccion').orderBy('fecha', 'desc').limit(150)
-                    .onSnapshot(s => setScannedHistory(s.docs.map(d => d.data())));
+                db.collection('kits_produccion').onSnapshot(s => setKits(s.docs.map(d => d.data())));
+                db.collection('orders').onSnapshot(s => setOrders(s.docs.map(d => ({id: d.id, ...d.data()}))));
             }, []);
 
-            useEffect(() => {
-                let html5QrCode;
-                if (isVisible) {
-                    const timer = setTimeout(() => {
-                        html5QrCode = new Html5Qrcode("reader", { formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128], verbose: false });
-                        qrRef.current = html5QrCode;
-                        html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 280, height: 120 } }, 
-                            (text) => {
-                                if (waitRef.current > 0 || statusRef.current !== "idle") return;
-                                handleScanLogic(text.trim());
-                            },
-                            () => {}
-                        ).catch(() => setMsg("Error Cámara"));
-                    }, 100);
-                    return () => clearTimeout(timer);
-                }
-                return () => { if (qrRef.current) qrRef.current.stop().catch(e=>{}).then(()=>qrRef.current.clear()); };
-            }, [isVisible]);
-
-            const showError = (m) => {
-                setScanStatus("error");
-                setMsg(m);
-                SOUNDS.error.play().catch(()=>{});
-                setTimeout(() => { 
-                    setScanStatus("idle"); 
-                    setMsg("Listo para escanear"); 
-                    setPendingData(null);
-                }, 3500);
+            const startCamera = () => {
+                const scanner = new Html5Qrcode("reader");
+                html5QrCode.current = scanner;
+                scanner.start(
+                    { facingMode: "environment" },
+                    { fps: 20, qrbox: { width: 250, height: 250 } },
+                    (text) => {
+                        // Solo procesar si no hay nada pendiente y no estamos en espera
+                        setPending(prev => {
+                            if (!prev && wait === 0) {
+                                handleRead(text.trim());
+                            }
+                            return prev;
+                        });
+                    }
+                ).catch(err => setMsg("Error: " + err));
             };
 
-            const handleScanLogic = (code) => {
-                const rawCode = code.toUpperCase();
-                
-                // 1. Verificación de duplicado en historial de producción
-                const isDuplicate = scannedHistory.some(s => s.code === rawCode || s.kitId === rawCode);
-                if (isDuplicate) return showError("⛔ DUPLICADO: YA REGISTRADO");
-
-                // 2. Lógica para KITS (K...)
-                if (rawCode.startsWith('K')) {
-                    const kit = kitsDB.find(k => k.kitId === rawCode);
-                    if (!kit) return showError("❌ KIT NO ENCONTRADO EN DB");
-
-                    // Verificar si alguna pieza del kit ya fue escaneada por separado
-                    const pieceIds = kit.piezas.map(p => p.codigoUnico);
-                    if (scannedHistory.some(s => pieceIds.includes(s.code))) return showError("⛔ CONFLICTO: PIEZAS YA REGISTRADAS");
-
-                    SOUNDS.success.play().catch(()=>{});
-                    setPendingData({ type: 'KIT', data: kit });
-                    setScanStatus("pending_auth");
-                    setMsg("⚠️ KIT DETECTADO: ESPERANDO AUTORIZACIÓN");
-                } 
-                // 3. Lógica para PIEZAS INDIVIDUALES (P...)
-                else {
-                    let piezaInfo = null;
-                    ordersCache.forEach(o => {
-                        const found = o.progreso?.find(p => p.codigoUnico === rawCode);
-                        if(found) piezaInfo = {...found, modelo: o.codigo, partida: o.partida, orderId: o.id, maquina: found.maquina || o.maquina || 'SN'};
+            const handleRead = (code) => {
+                const raw = code.toUpperCase();
+                if (raw.startsWith('K')) {
+                    const foundKit = kits.find(k => k.kitId === raw);
+                    if (foundKit) setPending({ type: 'KIT', data: foundKit });
+                    else setMsg("❌ KIT NO ENCONTRADO");
+                } else {
+                    let foundItem = null;
+                    orders.forEach(o => {
+                        const match = o.progreso?.find(p => p.codigoUnico === raw);
+                        if (match) foundItem = { ...match, orderId: o.id, modelo: o.codigo, partida: o.partida };
                     });
-
-                    if (!piezaInfo) return showError("❌ PIEZA NO REGISTRADA EN ÓRDENES");
-
-                    SOUNDS.success.play().catch(()=>{});
-                    setPendingData({ type: 'INDIVIDUAL', data: piezaInfo });
-                    setScanStatus("pending_auth");
-                    setMsg("⚠️ PIEZA DETECTADA: ESPERANDO AUTORIZACIÓN");
+                    if (foundItem) setPending({ type: 'INDV', data: foundItem });
+                    else setMsg("❌ PAQUETE NO ENCONTRADO");
                 }
             };
 
-            const handleConfirm = async () => {
-                if (!pendingData) return;
+            const confirmUpload = async () => {
+                const batch = db.batch();
+                const now = firebase.firestore.FieldValue.serverTimestamp();
+                
                 try {
-                    const batch = db.batch();
-                    const now = firebase.firestore.FieldValue.serverTimestamp();
-
-                    if (pendingData.type === 'KIT') {
-                        const kit = pendingData.data;
-                        kit.piezas.forEach(p => {
+                    if (pending.type === 'KIT') {
+                        pending.data.piezas.forEach(p => {
                             batch.set(db.collection('registro_produccion').doc(), {
-                                code: p.codigoUnico, modelo: kit.modelo, orderId: p.orderId,
-                                partida: kit.partida, paquete_indice: p.paqueteNum,
-                                tejedor: "Balta Scan", fecha: now, kitId: kit.kitId,
-                                maquina: p.maquina || 'SN'
+                                code: p.codigoUnico, modelo: pending.data.modelo, orderId: p.orderId,
+                                partida: pending.data.partida, paquete_indice: p.paqueteNum,
+                                tejedor: "Balta Scan", fecha: now, kitId: pending.data.kitId,
+                                maquina: p.maquina || 'SN', finished: false
                             });
                         });
                     } else {
-                        const p = pendingData.data;
+                        const p = pending.data;
                         batch.set(db.collection('registro_produccion').doc(), {
                             code: p.codigoUnico, modelo: p.modelo, orderId: p.orderId,
                             partida: p.partida, paquete_indice: p.paqueteNum,
-                            tejedor: "Balta Scan", fecha: now, maquina: p.maquina
+                            tejedor: "Balta Scan", fecha: now, maquina: p.maquina || 'SN', finished: false
                         });
                     }
-
                     await batch.commit();
-                    setScanStatus("success");
-                    setMsg("✅ REGISTRO EXITOSO");
-                    setPendingData(null);
-                    setWait(5); // Inicia Cooldown de 5 segundos
-                    setTimeout(() => setScanStatus("idle"), 5000);
-                } catch (e) { showError("❌ ERROR AL REGISTRAR EN DB"); }
+                    setPending(null);
+                    setWait(5);
+                } catch (e) { setMsg("Error al enviar"); }
             };
 
             useEffect(() => {
+                let timer;
                 if (wait > 0) {
-                    const t = setTimeout(() => setWait(wait - 1), 1000);
-                    return () => clearTimeout(t);
+                    timer = setTimeout(() => setWait(wait - 1), 1000);
                 }
+                return () => clearTimeout(timer);
             }, [wait]);
 
-            if (!isVisible) return null;
-
             return (
-                <div className="fixed inset-0 z-[700] bg-[#020617] flex flex-col p-6 overflow-hidden">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-2">
-                            <Icon name="shield-check" className="text-blue-500" size={24}/>
-                            <h2 className="font-black text-white text-xl italic uppercase tracking-tighter">Auth Scanner</h2>
+                <div className="p-6 h-screen flex flex-col bg-[#020617]">
+                    {!active ? (
+                        <div className="flex-1 flex flex-col items-center justify-center gap-6">
+                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="w-40" />
+                            <button onClick={() => { setActive(true); setTimeout(startCamera, 100); }} className="w-full bg-blue-600 py-10 rounded-[2.5rem] font-black text-2xl">ENCENDER CÁMARA</button>
                         </div>
-                        <button onClick={onClose} className="btn-close-balta">
-                            <span className="x-black-bg">X</span>
-                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="balta-mini-logo" />
-                        </button>
-                    </div>
-
-                    {/* LECTOR */}
-                    <div className={`scan-wrapper mb-4 transition-all duration-300 ${scanStatus === 'error' ? 'error border-red-500 bg-red-950/20' : scanStatus === 'success' ? 'success' : ''}`}>
-                        <div id="reader"></div>
-                        
-                        {/* COOLDOWN OVERLAY */}
-                        {wait > 0 && (
-                            <div className="wait-overlay animate-pulse">
-                                <span className="text-blue-500 font-black text-xs mb-2 tracking-[0.3em]">REPOSO DE SEGURIDAD</span>
-                                <span className="countdown-text">{wait}</span>
-                            </div>
-                        )}
-
-                        {/* ERROR OVERLAY */}
-                        {scanStatus === 'error' && (
-                            <div className="wait-overlay bg-red-900/90 text-center px-6">
-                                <Icon name="octagon-x" size={64} className="text-white mb-4"/>
-                                <span className="text-white font-black text-xl uppercase leading-tight">{msg}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* STATUS BAR */}
-                    <div className={`text-center py-3 mb-4 rounded-xl text-[10px] font-black uppercase tracking-widest border ${scanStatus === 'pending_auth' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : 'bg-slate-900 border-slate-700 text-slate-400'}`}>
-                        {msg}
-                    </div>
-
-                    {/* PANEL DE AUTORIZACIÓN */}
-                    <div className="flex-1 overflow-hidden relative">
-                        {pendingData ? (
-                            <div className="auth-container h-full bg-slate-900 border border-blue-500/30 rounded-2xl p-5 flex flex-col">
-                                <div className="flex justify-between items-start border-b border-slate-800 pb-3 mb-4">
-                                    <div className="w-[60%]">
-                                        <span className="text-blue-400 text-[10px] font-black block tracking-widest uppercase">
-                                            {pendingData.type === 'KIT' ? 'GRUPO DETECTADO' : 'PIEZA INDIVIDUAL'}
-                                        </span>
-                                        <span className="text-2xl font-black text-white truncate block">
-                                            {pendingData.type === 'KIT' ? pendingData.data.kitId : pendingData.data.codigoUnico}
-                                        </span>
+                    ) : (
+                        <div className="flex-1 flex flex-col">
+                            <div className="scan-container">
+                                <div id="reader"></div>
+                                {wait > 0 && (
+                                    <div className="overlay-wait">
+                                        <span className="text-7xl font-black text-blue-500">{wait}</span>
+                                        <p className="font-bold text-xs uppercase tracking-[0.2em] mt-2">Siguiente en...</p>
                                     </div>
-                                    <div className="w-[35%] h-16 bg-black rounded-lg p-1 border border-slate-700 overflow-hidden">
-                                        <SmartImage modelo={pendingData.data.modelo} />
+                                )}
+                            </div>
+                            
+                            <div className="mt-4 p-3 bg-slate-900 rounded-xl text-center border border-slate-800">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+                                    {pending ? "⚠️ Esperando confirmación" : wait > 0 ? "Reposo de cámara" : "Listo para escanear"}
+                                </span>
+                            </div>
+
+                            {pending && (
+                                <div className="mt-4 flex-1 bg-white rounded-3xl p-6 text-slate-900 flex flex-col justify-between shadow-2xl animate-bounce-in">
+                                    <div>
+                                        <p className="text-3xl font-black leading-none">{pending.type === 'KIT' ? pending.data.kitId : pending.data.codigoUnico}</p>
+                                        <p className="text-xl font-bold text-slate-500">{pending.data.modelo}</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button onClick={() => setPending(null)} className="bg-slate-100 py-5 rounded-2xl font-black text-slate-400">DESCARTAR</button>
+                                        <button onClick={confirmUpload} className="bg-blue-600 py-5 rounded-2xl font-black text-white text-xl uppercase">Enviar</button>
                                     </div>
                                 </div>
-
-                                <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2 custom-scroll">
-                                    {pendingData.type === 'KIT' ? (
-                                        pendingData.data.piezas.map((p, i) => (
-                                            <div key={i} className="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] font-bold text-slate-400">Pqt #{p.paqueteNum}</span>
-                                                    <span className="text-xs font-black text-white uppercase">{p.piezaNombre?.split(' ')[0]}</span>
-                                                </div>
-                                                <span className="bg-blue-600/20 text-blue-400 text-[10px] font-black px-2 py-1 rounded">MAQ {p.maquina}</span>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="h-full flex flex-col justify-center items-center text-center space-y-3">
-                                            <div className="p-4 bg-slate-800 rounded-2xl w-full border border-slate-700">
-                                                <span className="text-yellow-500 font-black text-4xl block mb-1">{pendingData.data.modelo}</span>
-                                                <span className="text-slate-400 font-bold text-xs uppercase block">{pendingData.data.piezaNombre}</span>
-                                                <div className="mt-4 pt-4 border-t border-slate-700 flex justify-around">
-                                                    <div className="flex flex-col"><span className="text-[9px] text-slate-500">PAQUETE</span><span className="font-black">#{pendingData.data.paqueteNum}</span></div>
-                                                    <div className="flex flex-col"><span className="text-[9px] text-slate-500">MÁQUINA</span><span className="font-black text-blue-400">{pendingData.data.maquina}</span></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3 pt-2">
-                                    <button onClick={() => {setPendingData(null); setScanStatus("idle"); setMsg("Escaneo cancelado");}} className="py-4 bg-slate-800 text-slate-400 rounded-xl font-black text-[10px] uppercase border border-slate-700 active:scale-95 transition-transform">Descartar</button>
-                                    <button onClick={handleConfirm} className="py-4 bg-blue-600 text-white rounded-xl font-black text-xs uppercase shadow-[0_10px_20px_rgba(37,99,235,0.3)] animate-pulse active:scale-95 transition-transform flex items-center justify-center gap-2">
-                                        <Icon name="check-circle-2" /> AUTORIZAR
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center opacity-20">
-                                <Icon name="qr-code" size={80} className="mb-4 text-slate-400"/>
-                                <span className="font-bold text-xs uppercase tracking-widest text-slate-500">Aguardando lectura...</span>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             );
         };
-
-        const App = () => {
-            const [recent, setRecent] = useState([]);
-            const [showScan, setShowScan] = useState(false);
-
-            useEffect(() => {
-                return db.collection('registro_produccion').orderBy('fecha','desc').limit(20).onSnapshot(s => setRecent(s.docs.map(d => d.data())));
-            }, []);
-
-            return (
-                <div className="h-screen w-screen flex flex-col bg-[#020617] overflow-hidden">
-                    <div className="fixed-header-container">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="header-logo-img" />
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col items-center justify-center p-8 gap-8">
-                        <div className="relative group">
-                            <div className="absolute inset-0 bg-blue-600 blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                            <img src="https://raw.githubusercontent.com/jesusvn1993mplvt3-ai/Planificador/refs/heads/main/Balta.png" className="w-32 h-32 rounded-full mx-auto relative z-10 border-4 border-slate-800 shadow-2xl" />
-                        </div>
-                        
-                        <div className="text-center space-y-1">
-                            <h1 className="text-4xl font-black italic text-white tracking-tighter">BALTA SCAN <span className="text-blue-500">v16</span></h1>
-                            <p className="text-slate-500 font-bold text-[10px] tracking-[0.4em] uppercase">Control de Calidad & Registro</p>
-                        </div>
-
-                        <div onClick={() => setShowScan(true)} className="w-full max-w-xs py-10 bg-gradient-to-br from-slate-900 to-black border border-slate-800 rounded-[2.5rem] flex flex-col items-center gap-4 cursor-pointer hover:border-blue-500/50 transition-all shadow-2xl active:scale-95">
-                            <div className="bg-blue-600 p-5 rounded-full shadow-[0_0_30px_rgba(37,99,235,0.4)]">
-                                <Icon name="maximize" size={32} className="text-white"/>
-                            </div>
-                            <span className="font-black text-[10px] uppercase tracking-[0.3em] text-blue-200">Iniciar Cámara</span>
-                        </div>
-                    </div>
-
-                    <div className="p-8 flex justify-between items-center bg-slate-900/40 border-t border-slate-800 backdrop-blur-xl">
-                        <div className="flex flex-col">
-                            <span className="text-slate-500 font-black text-[9px] uppercase tracking-widest">Último escaneo:</span>
-                            <span className="text-white font-bold text-xs">{recent[0]?.modelo || 'Ninguno'} {recent[0]?.kitId ? '(KIT)' : ''}</span>
-                        </div>
-                        <div className="relative">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/CJNG_Logo.svg/1024px-CJNG_Logo.svg.png" className="w-14 h-14 object-contain opacity-80" />
-                            <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-black border-2 border-[#020617]">{recent.length}</div>
-                        </div>
-                    </div>
-
-                    <ScannerModal isVisible={showScan} onClose={() => setShowScan(false)} />
-                </div>
-            );
-        };
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
